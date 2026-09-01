@@ -254,8 +254,8 @@ function toMultilingual(raw: unknown): MultilingualValue {
 
 function fromMultilingual(value: MultilingualValue): Record<string, string> | null {
   const merged: Record<string, string> = { ...(value.rest ?? {}) };
-  if (value.el.trim()) merged.el = value.el.trim();
-  if (value.en.trim()) merged.en = value.en.trim();
+  if (value.el?.trim()) merged.el = value.el.trim();
+  if (value.en?.trim()) merged.en = value.en.trim();
   if (value.fr?.trim()) merged.fr = value.fr.trim();
   if (value.de?.trim()) merged.de = value.de.trim();
   return Object.keys(merged).length > 0 ? merged : null;
@@ -504,7 +504,7 @@ function MultilingualField({
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {/* Ελληνικά (Πρωτεύουσα γλώσσα εισαγωγής) */}
+        {/* Ελληνικά */}
         <div className="flex flex-col gap-1.5">
           <span className="inline-flex w-fit items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
             🇬🇷 Ελληνικά (Γράψε εδώ)
@@ -768,9 +768,11 @@ export default function AdminPage() {
         pushToast('success', `${form.name} created successfully.`);
       }
       await loadPropertyList();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error while saving.';
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string; details?: string; hint?: string };
+      const message = errorObj?.message || errorObj?.details || 'Error while saving.';
       pushToast('error', message);
+      console.error('Supabase save error details:', err);
     } finally {
       setSaving(false);
     }
@@ -808,9 +810,11 @@ export default function AdminPage() {
       }
       setEditingPlace(null);
       await loadPlaces();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not save place.';
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string; details?: string };
+      const message = errorObj?.message || errorObj?.details || 'Could not save place.';
       pushToast('error', message);
+      console.error('Save place error:', err);
     } finally {
       setSavingPlace(false);
     }
