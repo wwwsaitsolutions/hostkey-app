@@ -32,7 +32,7 @@ import {
 import { supabase } from '@/lib/supabase';
 
 /* ------------------------------------------------------------------ */
-/* Types                                                             */
+/* Τύποι Δεδομένων                                                    */
 /* ------------------------------------------------------------------ */
 
 interface MultilingualValue {
@@ -64,14 +64,14 @@ export type PlaceCategory =
   | 'rentals';
 
 const CATEGORY_OPTIONS: { value: PlaceCategory; label: string }[] = [
-  { value: 'beaches', label: '🏖️ Beaches & Weather' },
-  { value: 'groceries', label: '🥖 Bakery & Supermarkets' },
-  { value: 'food', label: '🍽️ Food & Taverns' },
-  { value: 'nightlife', label: '🍸 Bars & Nightlife' },
-  { value: 'gyms', label: '💪 Gyms & Pools' },
-  { value: 'culture', label: '🏛️ Sights & Culture' },
-  { value: 'activities', label: '🥾 Activities & Cruises' },
-  { value: 'rentals', label: '🚗 Rentals & Transfers' },
+  { value: 'beaches', label: '🏖️ Παραλίες & Καιρός' },
+  { value: 'groceries', label: '🥖 Φούρνοι & Σούπερ Μάρκετ' },
+  { value: 'food', label: '🍽️ Φαγητό & Ταβέρνες' },
+  { value: 'nightlife', label: '🍸 Μπαρ & Νυχτερινή Ζωή' },
+  { value: 'gyms', label: '💪 Γυμναστήρια & Πισίνες' },
+  { value: 'culture', label: '🏛️ Αξιοθέατα & Πολιτισμός' },
+  { value: 'activities', label: '🥾 Δραστηριότητες & Κρουαζιέρες' },
+  { value: 'rentals', label: '🚗 Ενοικιάσεις & Μεταφορές' },
 ];
 
 export interface PlaceItem {
@@ -165,20 +165,20 @@ interface ToastItem {
 }
 
 const SECTIONS: { key: SectionKey; label: string; icon: typeof HomeIcon }[] = [
-  { key: 'basic', label: 'Basic & Host', icon: HomeIcon },
-  { key: 'arrival', label: 'Arrival & Access', icon: DoorOpen },
-  { key: 'manual', label: 'House Manual', icon: BookOpen },
-  { key: 'mobility', label: 'Local Mobility', icon: LifeBuoy },
-  { key: 'safety', label: 'Emergency & Safety', icon: Phone },
-  { key: 'places', label: 'Explore Places', icon: Compass },
-  { key: 'ai', label: 'AI Knowledge', icon: Bot },
+  { key: 'basic', label: 'Βασικά & Οικοδεσπότης', icon: HomeIcon },
+  { key: 'arrival', label: 'Άφιξη & Πρόσβαση', icon: DoorOpen },
+  { key: 'manual', label: 'Οδηγός Σπιτιού', icon: BookOpen },
+  { key: 'mobility', label: 'Μετακινήσεις & Μεταφορές', icon: LifeBuoy },
+  { key: 'safety', label: 'Έκτακτη Ανάγκη & Ασφάλεια', icon: Phone },
+  { key: 'places', label: 'Προτάσεις & Σημεία', icon: Compass },
+  { key: 'ai', label: 'AI Βοηθός Επισκεπτών', icon: Bot },
 ];
 
 const FIELD_CLASS =
   'w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-stone-900 shadow-sm outline-none transition-colors placeholder:text-stone-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20';
 
 /* ------------------------------------------------------------------ */
-/* Helpers                                                           */
+/* Βοηθητικές Συναρτήσεις                                             */
 /* ------------------------------------------------------------------ */
 
 function emptyForm(): PropertyFormState {
@@ -435,7 +435,7 @@ function formToPayload(form: PropertyFormState, userId?: string | null): Record<
 }
 
 /* ------------------------------------------------------------------ */
-/* Form Controls & File Upload Component                             */
+/* Πεδία Φόρμας & Upload                                              */
 /* ------------------------------------------------------------------ */
 
 function FieldLabel({ children, hint }: { children: ReactNode; hint?: string }) {
@@ -505,10 +505,10 @@ function FileUploadField({
 
       const { data } = supabase.storage.from('guidebook-media').getPublicUrl(filePath);
       onChange(data.publicUrl);
-      onToast('success', 'File uploaded successfully!');
+      onToast('success', 'Το αρχείο ανέβηκε επιτυχώς!');
     } catch (err: unknown) {
       const errObj = err as { message?: string };
-      onToast('error', `Upload error: ${errObj?.message || 'Check storage bucket'}`);
+      onToast('error', `Σφάλμα μεταφόρτωσης: ${errObj?.message || 'Ελέγξτε το storage bucket'}`);
     } finally {
       setUploading(false);
     }
@@ -533,14 +533,14 @@ function FileUploadField({
           className="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition-colors hover:bg-stone-50 disabled:opacity-50"
         >
           {uploading ? <Loader2 className="h-4 w-4 animate-spin text-emerald-600" /> : <Upload className="h-4 w-4" />}
-          {uploading ? 'Uploading File…' : '📁 Upload Photo / File'}
+          {uploading ? 'Μεταφόρτωση…' : '📁 Επιλογή Φωτογραφίας / Αρχείου'}
         </button>
 
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Or paste URL directly (https://…)"
+          placeholder="ή επικολλήστε link απευθείας (https://…)"
           className={FIELD_CLASS + ' flex-1 text-xs'}
         />
 
@@ -549,7 +549,7 @@ function FileUploadField({
             type="button"
             onClick={() => onChange('')}
             className="shrink-0 p-2 text-stone-400 hover:text-red-500"
-            title="Clear file"
+            title="Διαγραφή αρχείου"
           >
             <X className="h-4 w-4" />
           </button>
@@ -559,7 +559,7 @@ function FileUploadField({
       {value && (
         <div className="mt-1 flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-2">
           {value.match(/\.(jpeg|jpg|gif|png|webp|avif|svg)($|\?)/i) ? (
-            <img src={value} alt="Preview" className="h-12 w-16 rounded-lg object-cover" />
+            <img src={value} alt="Προεπισκόπηση" className="h-12 w-16 rounded-lg object-cover" />
           ) : (
             <div className="flex h-12 w-16 items-center justify-center rounded-lg bg-stone-100 text-stone-400">
               <ImageIcon className="h-5 w-5" />
@@ -612,14 +612,14 @@ function MultilingualField({
           className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
         >
           {translating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
-          {translating ? 'Translating…' : '🪄 Translate to EN, FR, DE'}
+          {translating ? 'Μετάφραση…' : '🪄 Μετάφραση σε EN, FR, DE'}
         </button>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <span className="inline-flex w-fit items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
-            🇬🇷 Ελληνικά (Γράψε εδώ)
+            🇬🇷 Ελληνικά (Γράψτε εδώ)
           </span>
           {multiline ? (
             <textarea
@@ -642,14 +642,14 @@ function MultilingualField({
 
         <div className="flex flex-col gap-1.5">
           <span className="inline-flex w-fit items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-stone-600">
-            🇬🇧 English (Auto-filled)
+            🇬🇧 Αγγλικά (Αυτόματη μετάφραση)
           </span>
           {multiline ? (
             <textarea
               rows={3}
               value={value.en}
               onChange={(e) => onChange({ ...value, en: e.target.value })}
-              placeholder="English translation…"
+              placeholder="Αγγλική μετάφραση…"
               className={baseClass}
             />
           ) : (
@@ -657,7 +657,7 @@ function MultilingualField({
               type="text"
               value={value.en}
               onChange={(e) => onChange({ ...value, en: e.target.value })}
-              placeholder="English translation…"
+              placeholder="Αγγλική μετάφραση…"
               className={baseClass}
             />
           )}
@@ -703,7 +703,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
 }
 
 /* ------------------------------------------------------------------ */
-/* Main Admin Component with Strict User Isolation                    */
+/* Κύρια Σελίδα Admin                                                 */
 /* ------------------------------------------------------------------ */
 
 export default function AdminPage() {
@@ -784,7 +784,7 @@ export default function AdminPage() {
       const { data, error } = await supabase.from('properties').select('*').eq('id', id).single();
       setLoadingProperty(false);
       if (error || !data) {
-        pushToast('error', `Could not load property: ${error?.message ?? 'not found'}`);
+        pushToast('error', `Αδυναμία φόρτωσης καταλύματος: ${error?.message ?? 'δεν βρέθηκε'}`);
         return;
       }
       setForm(rowToForm(data as Record<string, unknown>));
@@ -792,14 +792,13 @@ export default function AdminPage() {
     [pushToast],
   );
 
-  // Φόρτωση καταλυμάτων με αυστηρό φιλτράρισμα user_id
+  // Φόρτωση καταλυμάτων: Όλα αν είναι Master Admin, ΜΟΝΟ τα δικά του αν είναι απλός χρήστης
   const loadPropertyList = useCallback(async () => {
     const isMaster = typeof window !== 'undefined' && localStorage.getItem('hostkey_is_master') === 'true';
 
     setLoadingList(true);
     let query = supabase.from('properties').select('id, name, slug').order('name', { ascending: true });
 
-    // Αν δεν είναι Master Admin, φιλτράρουμε αυστηρά με το user_id του συνδεδεμένου χρήστη
     if (!isMaster && user?.id) {
       query = query.eq('user_id', user.id);
     }
@@ -808,7 +807,7 @@ export default function AdminPage() {
     setLoadingList(false);
 
     if (error) {
-      pushToast('error', `Could not load properties: ${error.message}`);
+      pushToast('error', `Αδυναμία φόρτωσης λίστας: ${error.message}`);
       return;
     }
 
@@ -827,7 +826,7 @@ export default function AdminPage() {
     const { data, error } = await supabase.from('places').select('*').order('name', { ascending: true });
     setLoadingPlaces(false);
     if (error) {
-      pushToast('error', `Could not load places: ${error.message}`);
+      pushToast('error', `Αδυναμία φόρτωσης τοποθεσιών: ${error.message}`);
       return;
     }
     const mapped: PlaceItem[] = ((data as Record<string, unknown>[]) ?? []).map((row) => ({
@@ -859,7 +858,7 @@ export default function AdminPage() {
 
   const handleAutoTranslateAll = async () => {
     setAutoTranslatingAll(true);
-    pushToast('success', 'Translating all Greek content to English, French & German…');
+    pushToast('success', 'Μετάφραση όλων των ελληνικών κειμένων σε Αγγλικά, Γαλλικά & Γερμανικά…');
 
     const updated = { ...form };
     const fields: (keyof PropertyFormState)[] = [
@@ -905,17 +904,17 @@ export default function AdminPage() {
 
     setForm(updated);
     setAutoTranslatingAll(false);
-    pushToast('success', 'All fields translated! Click "Save Changes" to apply.');
+    pushToast('success', 'Όλα τα πεδία μεταφράστηκαν! Πατήστε "Αποθήκευση Αλλαγών" για εφαρμογή.');
   };
 
   const handleSave = useCallback(async () => {
     if (!form.name.trim()) {
-      pushToast('error', 'Please enter a property name.');
+      pushToast('error', 'Παρακαλώ εισάγετε όνομα καταλύματος.');
       setActiveSection('basic');
       return;
     }
     if (!form.slug.trim()) {
-      pushToast('error', 'Please enter a URL slug.');
+      pushToast('error', 'Παρακαλώ εισάγετε slug για το link (URL).');
       setActiveSection('basic');
       return;
     }
@@ -933,17 +932,17 @@ export default function AdminPage() {
         const { data, error } = await supabase.from('properties').update(payload).eq('id', form.id).select().single();
         if (error) throw error;
         setForm(rowToForm(data as Record<string, unknown>));
-        pushToast('success', `${form.name} updated successfully.`);
+        pushToast('success', `Το κατάλυμα "${form.name}" ενημερώθηκε επιτυχώς.`);
       } else {
         const { data, error } = await supabase.from('properties').insert(payload).select().single();
         if (error) throw error;
         setForm(rowToForm(data as Record<string, unknown>));
-        pushToast('success', `${form.name} created successfully.`);
+        pushToast('success', `Το κατάλυμα "${form.name}" δημιουργήθηκε επιτυχώς.`);
       }
       await loadPropertyList();
     } catch (err: unknown) {
       const errorObj = err as { message?: string; details?: string };
-      const message = errorObj?.message || errorObj?.details || 'Error while saving.';
+      const message = errorObj?.message || errorObj?.details || 'Σφάλμα κατά την αποθήκευση.';
       pushToast('error', message);
     } finally {
       setSaving(false);
@@ -953,7 +952,7 @@ export default function AdminPage() {
   const handleSavePlace = useCallback(async () => {
     if (!editingPlace) return;
     if (!editingPlace.name.trim()) {
-      pushToast('error', 'Please enter a place name.');
+      pushToast('error', 'Παρακαλώ εισάγετε όνομα σημείου.');
       return;
     }
 
@@ -974,17 +973,17 @@ export default function AdminPage() {
       if (editingPlace.id) {
         const { error } = await supabase.from('places').update(payload).eq('id', editingPlace.id);
         if (error) throw error;
-        pushToast('success', `"${editingPlace.name}" updated successfully.`);
+        pushToast('success', `Το σημείο "${editingPlace.name}" ενημερώθηκε επιτυχώς.`);
       } else {
         const { error } = await supabase.from('places').insert(payload);
         if (error) throw error;
-        pushToast('success', `"${editingPlace.name}" added successfully.`);
+        pushToast('success', `Το σημείο "${editingPlace.name}" προστέθηκε επιτυχώς.`);
       }
       setEditingPlace(null);
       await loadPlaces();
     } catch (err: unknown) {
       const errorObj = err as { message?: string; details?: string };
-      const message = errorObj?.message || errorObj?.details || 'Could not save place.';
+      const message = errorObj?.message || errorObj?.details || 'Αδυναμία αποθήκευσης σημείου.';
       pushToast('error', message);
     } finally {
       setSavingPlace(false);
@@ -993,13 +992,13 @@ export default function AdminPage() {
 
   const handleDeletePlace = useCallback(
     async (id: string, name: string) => {
-      if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+      if (!confirm(`Είστε σίγουροι ότι θέλετε να διαγράψετε το σημείο "${name}";`)) return;
       const { error } = await supabase.from('places').delete().eq('id', id);
       if (error) {
-        pushToast('error', `Could not delete place: ${error.message}`);
+        pushToast('error', `Αδυναμία διαγραφής: ${error.message}`);
         return;
       }
-      pushToast('success', `"${name}" was deleted.`);
+      pushToast('success', `Το σημείο "${name}" διαγράφηκε.`);
       await loadPlaces();
     },
     [loadPlaces, pushToast],
@@ -1030,16 +1029,16 @@ export default function AdminPage() {
     <div className="min-h-screen bg-[#F7F4EC] pb-28 text-stone-900">
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
-      {/* Header */}
+      {/* Κεφαλίδα Διαχείρισης */}
       <div className="sticky top-0 z-30 border-b border-stone-200/60 bg-[#F7F4EC]/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Link href="/" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-md" title="Go to Website Home">
+              <Link href="/" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-md" title="Αρχική Σελίδα">
                 <Sparkles className="h-5 w-5" />
               </Link>
               <div>
-                <h1 className="text-lg font-bold tracking-tight text-stone-900">Hostkey Admin Control</h1>
+                <h1 className="text-lg font-bold tracking-tight text-stone-900">Πίνακας Ελέγχου Hostkey</h1>
                 <p className="flex items-center gap-1.5 text-xs text-stone-500">
                   <User className="h-3.5 w-3.5 text-emerald-600" />
                   <span>{user?.email}</span>
@@ -1055,16 +1054,16 @@ export default function AdminPage() {
                 className="flex items-center gap-2 rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
               >
                 {autoTranslatingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                {autoTranslatingAll ? 'Translating All…' : '🪄 Auto-Translate All Fields'}
+                {autoTranslatingAll ? 'Μετάφραση όλων…' : '🪄 Αυτόματη Μετάφραση Όλων'}
               </button>
               <button
                 type="button"
                 onClick={handleLogout}
                 className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50"
-                title="Logout"
+                title="Αποσύνδεση"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">Αποσύνδεση</span>
               </button>
             </div>
           </div>
@@ -1077,7 +1076,7 @@ export default function AdminPage() {
                 disabled={loadingList || loadingProperty}
                 className={FIELD_CLASS + ' flex-1 disabled:opacity-60 font-semibold'}
               >
-                <option value="">{loadingList ? 'Loading properties…' : '— Select a property —'}</option>
+                <option value="">{loadingList ? 'Φόρτωση καταλυμάτων…' : '— Επιλέξτε κατάλυμα —'}</option>
                 {propertyList.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -1093,7 +1092,7 @@ export default function AdminPage() {
               className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition-colors hover:bg-stone-50"
             >
               <Plus className="h-4 w-4" />
-              Create New Property
+              Νέο Κατάλυμα
             </button>
 
             {liveGuideHref && (
@@ -1103,14 +1102,14 @@ export default function AdminPage() {
                 rel="noopener noreferrer"
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-500/20"
               >
-                🔗 View Live Guide
+                🔗 Προβολή Live Οδηγού
                 <ExternalLink className="h-3 w-3" />
               </a>
             )}
           </div>
         </div>
 
-        {/* Section Tabs */}
+        {/* Καρτέλες Ενοτήτων */}
         <div className="mx-auto max-w-5xl px-5">
           <div className="flex gap-1 overflow-x-auto pb-3">
             {SECTIONS.map((section) => {
@@ -1134,24 +1133,26 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Form Content */}
+      {/* Περιεχόμενο Φόρμας */}
       <div className="mx-auto max-w-5xl px-5 pt-6">
+
+        {/* 1. Βασικά Στοιχεία & Οικοδεσπότης */}
         {activeSection === 'basic' && (
           <div className="flex flex-col gap-6">
             <SectionHeading
-              title="Basic Info & Host Contacts"
-              subtitle="Identification, address, cover images, Wi-Fi and direct host channels."
+              title="Βασικές Πληροφορίες & Στοιχεία Οικοδεσπότη"
+              subtitle="Όνομα, διεύθυνση, κεντρική φωτογραφία, κωδικοί Wi-Fi και απευθείας επικοινωνία."
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField label="Property Name" value={form.name} onChange={set('name')} placeholder="e.g. Seaside Luxury Villa" />
+              <TextField label="Όνομα Καταλύματος" value={form.name} onChange={set('name')} placeholder="π.χ. Πολυτελές Παραθαλάσσιο Διαμέρισμα" />
               <div className="flex flex-col gap-1.5">
-                <FieldLabel hint="URL identifier">Slug</FieldLabel>
+                <FieldLabel hint="Αναγνωριστικό συνδέσμου URL">Σύνδεσμος (Slug)</FieldLabel>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={form.slug}
                     onChange={(e) => set('slug')(slugify(e.target.value))}
-                    placeholder="e.g. seaside-luxury-villa"
+                    placeholder="π.χ. seaside-luxury-apartment"
                     className={FIELD_CLASS}
                   />
                   <button
@@ -1160,41 +1161,41 @@ export default function AdminPage() {
                     disabled={!form.name.trim()}
                     className="shrink-0 rounded-xl border border-stone-200 bg-white px-3 text-xs font-semibold text-stone-600 transition-colors hover:bg-stone-50 disabled:opacity-40"
                   >
-                    Generate
+                    Δημιουργία
                   </button>
                 </div>
               </div>
             </div>
 
-            <TextField label="Address" value={form.address} onChange={set('address')} placeholder="e.g. Main Street 15, City Center" />
+            <TextField label="Διεύθυνση Καταλύματος" value={form.address} onChange={set('address')} placeholder="π.χ. Σοφοκλή Βενιζέλου 24, Ρέθυμνο" />
 
             <FileUploadField
-              label="Apartment Cover Image"
+              label="Κεντρική Φωτογραφία Καταλύματος"
               value={form.cover_image}
               onChange={set('cover_image')}
               onToast={pushToast}
-              hint="PNG, JPG, WEBP, AVIF, PDF from your device"
+              hint="PNG, JPG, WEBP από τη συσκευή σας"
             />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <TextField label="Smart Lock / Keysafe Code" value={form.keysafe_code} onChange={set('keysafe_code')} placeholder="e.g. 1234" />
-              <TextField label="Wi-Fi SSID" value={form.wifi_ssid} onChange={set('wifi_ssid')} placeholder="e.g. Villa_Guest_WiFi" />
-              <TextField label="Wi-Fi Password" value={form.wifi_password} onChange={set('wifi_password')} placeholder="e.g. welcome2026" />
+              <TextField label="Κωδικός Κλειδοθήκης / Smart Lock" value={form.keysafe_code} onChange={set('keysafe_code')} placeholder="π.χ. 1234" />
+              <TextField label="Όνομα Wi-Fi (SSID)" value={form.wifi_ssid} onChange={set('wifi_ssid')} placeholder="π.χ. Apartment_WiFi" />
+              <TextField label="Κωδικός Wi-Fi" value={form.wifi_password} onChange={set('wifi_password')} placeholder="π.χ. welcome2026" />
             </div>
 
             <div className="mt-2 rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm shadow-stone-900/5">
-              <p className="mb-3 text-sm font-bold text-stone-900">Direct Host Support & Contact Details</p>
+              <p className="mb-3 text-sm font-bold text-stone-900">Στοιχεία Επικοινωνίας & Υποστήριξης Οικοδεσπότη</p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <TextField label="Host Display Name" value={form.host_name} onChange={set('host_name')} placeholder="e.g. Maria" />
+                <TextField label="Όνομα Οικοδεσπότη" value={form.host_name} onChange={set('host_name')} placeholder="π.χ. Μαρία" />
                 <FileUploadField
-                  label="Host Profile Avatar"
+                  label="Φωτογραφία Προφίλ Οικοδεσπότη"
                   value={form.host_avatar_url}
                   onChange={set('host_avatar_url')}
                   onToast={pushToast}
                 />
-                <TextField label="Host Phone (Call)" value={form.host_phone} onChange={set('host_phone')} placeholder="+30 690 000 0000" type="tel" />
-                <TextField label="Host WhatsApp Number" value={form.whatsapp_number} onChange={set('whatsapp_number')} placeholder="+30 690 000 0000" type="tel" />
-                <TextField label="Host Email" value={form.host_email} onChange={set('host_email')} placeholder="host@example.com" type="email" />
+                <TextField label="Τηλέφωνο Κλήσης Οικοδεσπότη" value={form.host_phone} onChange={set('host_phone')} placeholder="+30 690 000 0000" type="tel" />
+                <TextField label="Αριθμός WhatsApp Οικοδεσπότη" value={form.whatsapp_number} onChange={set('whatsapp_number')} placeholder="+30 690 000 0000" type="tel" />
+                <TextField label="Email Οικοδεσπότη" value={form.host_email} onChange={set('host_email')} placeholder="host@example.com" type="email" />
               </div>
             </div>
 
@@ -1216,43 +1217,43 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. Arrival & Lockbox */}
+        {/* 2. Άφιξη, Κλειδοθήκη & Πρόσβαση */}
         {activeSection === 'arrival' && (
           <div className="flex flex-col gap-5">
             <SectionHeading
-              title="Arrival, Lockbox & Check-in / Out"
-              subtitle="Timetables, entrance instructions, parking and interactive step guides."
+              title="Άφιξη, Κλειδοθήκη & Check-in / Out"
+              subtitle="Ώρες άφιξης/αναχώρησης, οδηγίες εισόδου, πάρκινγκ και αναλυτικά βήματα check-in."
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField label="Check-in Time" value={form.check_in_time} onChange={set('check_in_time')} placeholder="15:00" />
-              <TextField label="Check-out Time" value={form.check_out_time} onChange={set('check_out_time')} placeholder="11:00" />
+              <TextField label="Ώρα Check-in" value={form.check_in_time} onChange={set('check_in_time')} placeholder="15:00" />
+              <TextField label="Ώρα Check-out" value={form.check_out_time} onChange={set('check_out_time')} placeholder="11:00" />
             </div>
 
-            <MultilingualField label="Building & Elevator Access Instructions" value={form.building_access} onChange={set('building_access')} />
-            <MultilingualField label="Elevator Specific Info" value={form.elevator_info} onChange={set('elevator_info')} />
-            <MultilingualField label="Parking Instructions" value={form.parking_info} onChange={set('parking_info')} />
-            <TextField label="Parking — Google Maps URL" value={form.parking_maps_url} onChange={set('parking_maps_url')} placeholder="https://maps.google.com/…" type="url" />
-            <MultilingualField label="Late Arrival Instructions" value={form.late_arrival_info} onChange={set('late_arrival_info')} />
+            <MultilingualField label="Οδηγίες Εισόδου στην Οικοδομή & Πρόσβασης" value={form.building_access} onChange={set('building_access')} />
+            <MultilingualField label="Οδηγίες Ασανσέρ (Όροφος, λειτουργία)" value={form.elevator_info} onChange={set('elevator_info')} />
+            <MultilingualField label="Οδηγίες Πάρκινγκ (Ιδιωτικό ή δρόμος)" value={form.parking_info} onChange={set('parking_info')} />
+            <TextField label="Σύνδεσμος Τοποθεσίας Πάρκινγκ (Google Maps URL)" value={form.parking_maps_url} onChange={set('parking_maps_url')} placeholder="https://maps.google.com/…" type="url" />
+            <MultilingualField label="Οδηγίες Καθυστερημένης Άφιξης (Late Arrival)" value={form.late_arrival_info} onChange={set('late_arrival_info')} />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5 rounded-2xl border border-stone-200/70 bg-white p-4">
-                <FieldLabel hint="One step per line">Check-in Steps (Drawer Modal)</FieldLabel>
+                <FieldLabel hint="Ένα βήμα ανά γραμμή">Βήματα Άφιξης / Check-in (Αναδυόμενος Οδηγός)</FieldLabel>
                 <textarea
                   rows={4}
                   value={form.checkin_steps_text}
                   onChange={(e) => set('checkin_steps_text')(e.target.value)}
-                  placeholder="e.g.&#10;Arrive anytime after 15:00...&#10;Open lockbox with code...&#10;Keys are inside..."
+                  placeholder="π.χ.&#10;Φτάνετε οποιαδήποτε ώρα μετά τις 15:00...&#10;Ανοίγετε την κλειδοθήκη με τον κωδικό...&#10;Τα κλειδιά βρίσκονται μέσα..."
                   className={FIELD_CLASS}
                 />
               </div>
 
               <div className="flex flex-col gap-1.5 rounded-2xl border border-stone-200/70 bg-white p-4">
-                <FieldLabel hint="One step per line">Check-out Steps (Drawer Modal)</FieldLabel>
+                <FieldLabel hint="Ένα βήμα ανά γραμμή">Βήματα Αναχώρησης / Check-out (Αναδυόμενος Οδηγός)</FieldLabel>
                 <textarea
                   rows={4}
                   value={form.checkout_steps_text}
                   onChange={(e) => set('checkout_steps_text')(e.target.value)}
-                  placeholder="e.g.&#10;Checkout is by 11:00...&#10;Turn off AC & lights...&#10;Leave keys in lockbox..."
+                  placeholder="π.χ.&#10;Η αναχώρηση γίνεται έως τις 11:00...&#10;Κλείνετε κλιματιστικά και φώτα...&#10;Τοποθετείτε τα κλειδιά πίσω στην κλειδοθήκη..."
                   className={FIELD_CLASS}
                 />
               </div>
@@ -1260,86 +1261,86 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 3. House Manual */}
+        {/* 3. Οδηγός Σπιτιού (House Manual) */}
         {activeSection === 'manual' && (
           <div className="flex flex-col gap-5">
-            <SectionHeading title="Apartment House Manual" subtitle="Every accordion guide inside the manual tab — multilingual auto-translated." />
-            <MultilingualField label="Tap Water & Drinking Guide" value={form.tap_water_info} onChange={set('tap_water_info')} />
-            <MultilingualField label="Plumbing & Toilet Paper Rules" value={form.plumbing_rules} onChange={set('plumbing_rules')} />
-            <MultilingualField label="Electrical Sockets & Voltage" value={form.sockets_appliances_info} onChange={set('sockets_appliances_info')} />
-            <MultilingualField label="TV & Streaming Apps" value={form.tv_streaming_info} onChange={set('tv_streaming_info')} />
-            <MultilingualField label="Coffee Machine & Supplies" value={form.coffee_supplies_info} onChange={set('coffee_supplies_info')} />
-            <MultilingualField label="Stove, Oven & Microwave" value={form.kitchen_appliances_info} onChange={set('kitchen_appliances_info')} />
-            <MultilingualField label="Washing Machine & Laundry" value={form.laundry_info} onChange={set('laundry_info')} />
-            <MultilingualField label="Dishwasher Guide" value={form.dishwasher_info} onChange={set('dishwasher_info')} />
-            <MultilingualField label="Hot Water / Solar Boiler" value={form.hot_water_info} onChange={set('hot_water_info')} />
-            <MultilingualField label="Air Conditioning & Heating" value={form.amenities_info} onChange={set('amenities_info')} />
-            <MultilingualField label="Extra Linens, Towels & Pillows" value={form.linens_towels_info} onChange={set('linens_towels_info')} />
-            <MultilingualField label="Trash & Recycling Instructions" value={form.trash_info} onChange={set('trash_info')} />
-            <TextField label="Trash Bins — Google Maps Pin URL" value={form.trash_maps_url} onChange={set('trash_maps_url')} placeholder="https://maps.google.com/…" type="url" />
-            <MultilingualField label="House Rules & Quiet Hours" value={form.house_rules} onChange={set('house_rules')} />
+            <SectionHeading title="Ψηφιακός Οδηγός Σπιτιού" subtitle="Όλες οι οδηγίες συσκευών και κανόνων σπιτιού που εμφανίζονται στον επισκέπτη — αυτόματα μεταφρασμένες." />
+            <MultilingualField label="Πόσιμο Νερό Βρύσης & Οδηγίες" value={form.tap_water_info} onChange={set('tap_water_info')} />
+            <MultilingualField label="Κανόνες Υδραυλικών & Χαρτί Τουαλέτας" value={form.plumbing_rules} onChange={set('plumbing_rules')} />
+            <MultilingualField label="Πρίζες & Ηλεκτρικές Συσκευές" value={form.sockets_appliances_info} onChange={set('sockets_appliances_info')} />
+            <MultilingualField label="Τηλεόραση & Εφαρμογές Streaming (Netflix κ.λπ.)" value={form.tv_streaming_info} onChange={set('tv_streaming_info')} />
+            <MultilingualField label="Καφετιέρα & Αναλώσιμα Καφέ" value={form.coffee_supplies_info} onChange={set('coffee_supplies_info')} />
+            <MultilingualField label="Κουζίνα, Φούρνος & Μικροσυσκευές" value={form.kitchen_appliances_info} onChange={set('kitchen_appliances_info')} />
+            <MultilingualField label="Πλυντήριο Ρούχων & Απορρυπαντικό" value={form.laundry_info} onChange={set('laundry_info')} />
+            <MultilingualField label="Πλυντήριο Πιάτων" value={form.dishwasher_info} onChange={set('dishwasher_info')} />
+            <MultilingualField label="Ζεστό Νερό & Ηλιακός / Θερμοσίφωνας" value={form.hot_water_info} onChange={set('hot_water_info')} />
+            <MultilingualField label="Κλιματισμός & Θέρμανση (A/C)" value={form.amenities_info} onChange={set('amenities_info')} />
+            <MultilingualField label="Έξτρα Κλινοσκεπάσματα, Πετσέτες & Μαξιλάρια" value={form.linens_towels_info} onChange={set('linens_towels_info')} />
+            <MultilingualField label="Διαχείριση Σκουπιδιών & Ανακύκλωση" value={form.trash_info} onChange={set('trash_info')} />
+            <TextField label="Τοποθεσία Κάδων Σκουπιδιών (Google Maps URL)" value={form.trash_maps_url} onChange={set('trash_maps_url')} placeholder="https://maps.google.com/…" type="url" />
+            <MultilingualField label="Κανόνες Σπιτιού & Ώρες Κοινής Ησυχίας" value={form.house_rules} onChange={set('house_rules')} />
           </div>
         )}
 
-        {/* 4. Local Mobility with Pro Upsell */}
+        {/* 4. Μετακινήσεις & Μεταφορές */}
         {activeSection === 'mobility' && (
           <div className="flex flex-col gap-5">
-            <SectionHeading title="Local Mobility & Transport" subtitle="Information cards for baggage, public buses, taxi stands, car rentals and private transfers." />
-            <MultilingualField label="Luggage Storage Lockers Info" value={form.luggage_storage_info} onChange={set('luggage_storage_info')} />
-            <MultilingualField label="Public Bus / KTEL Timetables & Info" value={form.bus_transport_info} onChange={set('bus_transport_info')} />
+            <SectionHeading title="Τοπικές Μετακινήσεις & Μεταφορές" subtitle="Πληροφορίες για αποθήκευση αποσκευών, λεωφορεία ΚΤΕΛ, ταξί, ενοικιάσεις αυτοκινήτων και transfers." />
+            <MultilingualField label="Χώρος Αποθήκευσης Αποσκευών (Lockers)" value={form.luggage_storage_info} onChange={set('luggage_storage_info')} />
+            <MultilingualField label="Αστικά & Υπεραστικά Λεωφορεία (ΚΤΕΛ)" value={form.bus_transport_info} onChange={set('bus_transport_info')} />
             
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <MultilingualField label="Taxi Ranks & Radio-Taxi Info" value={form.taxi_station_info} onChange={set('taxi_station_info')} />
+              <MultilingualField label="Πιάτσα Ταξί & Ραδιοταξί" value={form.taxi_station_info} onChange={set('taxi_station_info')} />
               <div className="flex flex-col justify-start">
-                <TextField label="Taxi Phone" value={form.taxi_phone} onChange={set('taxi_phone')} placeholder="+30 210 000 0000" type="tel" />
+                <TextField label="Τηλέφωνο Ταξί" value={form.taxi_phone} onChange={set('taxi_phone')} placeholder="+30 28310 25000" type="tel" />
               </div>
             </div>
 
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-stone-900">🚗 Car Rentals</span>
+                <span className="text-sm font-bold text-stone-900">🚗 Ενοικιάσεις Αυτοκινήτων</span>
                 <button
                   type="button"
-                  onClick={() => setShowProModal('Car Rentals & Affiliate Monetization')}
+                  onClick={() => setShowProModal('Ενοικιάσεις Αυτοκινήτων & Δικά σας Affiliate Links')}
                   className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-1 text-[11px] font-bold text-amber-800 hover:bg-amber-100"
                 >
                   <Crown className="h-3 w-3 text-amber-600" />
-                  <span>Custom Affiliate (Pro)</span>
+                  <span>Προσαρμοσμένο Affiliate (Pro)</span>
                 </button>
               </div>
-              <MultilingualField label="Car Rentals Instructions & Recommendations" value={form.car_rentals_info} onChange={set('car_rentals_info')} />
-              <TextField label="Car Rentals Booking URL" value={form.car_rentals_booking_url} onChange={set('car_rentals_booking_url')} placeholder="https://example-rentals.com" type="url" />
+              <MultilingualField label="Οδηγίες & Προτάσεις Ενοικίασης Αυτοκινήτου" value={form.car_rentals_info} onChange={set('car_rentals_info')} />
+              <TextField label="Σύνδεσμος Κράτησης Ενοικίασης (Booking URL)" value={form.car_rentals_booking_url} onChange={set('car_rentals_booking_url')} placeholder="https://sevenrental.gr" type="url" />
             </div>
 
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-stone-900">🚐 Airport & Port Transfers</span>
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">Included Free</span>
+                <span className="text-sm font-bold text-stone-900">🚐 Μεταφορές από/προς Αεροδρόμια & Λιμάνια (Transfers)</span>
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">Περιλαμβάνεται Δωρεάν</span>
               </div>
-              <MultilingualField label="Transfers Instructions (Directions, pick-up points, host arrangement)" value={form.transfers_info} onChange={set('transfers_info')} />
+              <MultilingualField label="Οδηγίες Μεταφοράς & Σημεία Παραλαβής" value={form.transfers_info} onChange={set('transfers_info')} />
             </div>
           </div>
         )}
 
-        {/* 5. Emergency & Safety */}
+        {/* 5. Έκτακτη Ανάγκη & Ασφάλεια */}
         {activeSection === 'safety' && (
           <div className="flex flex-col gap-5">
-            <SectionHeading title="Emergency, Pharmacy & First Aid" subtitle="Safety information cards shown on the Support tab." />
-            <MultilingualField label="First Aid Kit Exact Location" value={form.first_aid_location} onChange={set('first_aid_location')} />
+            <SectionHeading title="Έκτακτη Ανάγκη, Φαρμακεία & Πρώτες Βοήθειες" subtitle="Κρίσιμες πληροφορίες ασφάλειας που εμφανίζονται στην καρτέλα Υποστήριξης του επισκέπτη." />
+            <MultilingualField label="Ακριβής Τοποθεσία Κουτιού Πρώτων Βοηθειών (First Aid Kit)" value={form.first_aid_location} onChange={set('first_aid_location')} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField label="Duty Pharmacy Phone" value={form.pharmacy_phone} onChange={set('pharmacy_phone')} placeholder="+30 210 000 0000" type="tel" />
-              <TextField label="24/7 Pharmacy Finder URL" value={form.pharmacy_finder_url} onChange={set('pharmacy_finder_url')} placeholder="https://…" type="url" />
+              <TextField label="Τηλέφωνο Εφημερεύοντος Φαρμακείου" value={form.pharmacy_phone} onChange={set('pharmacy_phone')} placeholder="+30 28310 12345" type="tel" />
+              <TextField label="Σύνδεσμος Εύρεσης Εφημερευόντων Φαρμακείων (URL)" value={form.pharmacy_finder_url} onChange={set('pharmacy_finder_url')} placeholder="https://…" type="url" />
             </div>
           </div>
         )}
 
-        {/* 6. Explore Places */}
+        {/* 6. Προτάσεις & Σημεία (Explore Places) */}
         {activeSection === 'places' && (
           <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <SectionHeading
-                title="Explore Places & Spots"
-                subtitle="Manage beaches, taverns, supermarkets, nightlife & cultural attractions."
+                title="Προτάσεις, Παραλίες & Αξιοθέατα"
+                subtitle="Διαχειριστείτε παραλίες, ταβέρνες, σούπερ μάρκετ, νυχτερινή ζωή και σημεία ενδιαφέροντος."
               />
               <button
                 type="button"
@@ -1347,7 +1348,7 @@ export default function AdminPage() {
                 className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
               >
                 <Plus className="h-4 w-4" />
-                Add New Place
+                Προσθήκη Νέου Σημείου
               </button>
             </div>
 
@@ -1359,7 +1360,7 @@ export default function AdminPage() {
                   selectedCategoryFilter === 'all' ? 'bg-stone-900 text-white' : 'bg-white text-stone-600 border border-stone-200'
                 }`}
               >
-                All Spots ({places.length})
+                Όλα τα Σημεία ({places.length})
               </button>
               {CATEGORY_OPTIONS.map((cat) => {
                 const count = places.filter((p) => p.category === cat.value).length;
@@ -1384,7 +1385,7 @@ export default function AdminPage() {
               </div>
             ) : filteredPlaces.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-400">
-                No places found for this category. Click "Add New Place" to create one.
+                Δεν βρέθηκαν σημεία σε αυτή την κατηγορία. Πατήστε "Προσθήκη Νέου Σημείου" για να δημιουργήσετε.
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1395,7 +1396,7 @@ export default function AdminPage() {
                         <div className="h-36 w-full bg-cover bg-center" style={{ backgroundImage: `url(${place.image_url})` }} />
                       ) : (
                         <div className="flex h-36 w-full items-center justify-center bg-stone-100 text-stone-400 text-xs">
-                          No Image
+                          Χωρίς Φωτογραφία
                         </div>
                       )}
                       <div className="p-4">
@@ -1420,12 +1421,13 @@ export default function AdminPage() {
                         onClick={() => setEditingPlace(place)}
                         className="flex-1 rounded-lg bg-white border border-stone-200 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100"
                       >
-                        Edit
+                        Επεξεργασία
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeletePlace(place.id, place.name)}
                         className="rounded-lg p-1.5 text-red-600 hover:bg-red-50"
+                        title="Διαγραφή"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -1437,33 +1439,33 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 7. AI Concierge Knowledge with Pro Upsell */}
+        {/* 7. AI Βοηθός Επισκεπτών */}
         {activeSection === 'ai' && (
           <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <SectionHeading
-                title="AI Concierge Knowledge Base"
-                subtitle="Custom instructions and facts specific to this apartment. The AI Concierge chat will use this context to answer guests' questions."
+                title="Βάση Γνώσης AI Βοηθού Επισκεπτών (AI Concierge)"
+                subtitle="Προσθέστε ειδικές οδηγίες, μυστικά tips και πληροφορίες για αυτό το σπίτι. Ο AI βοηθός θα τις χρησιμοποιεί για να απαντά άμεσα στους επισκέπτες σας 24/7."
               />
               <button
                 type="button"
-                onClick={() => setShowProModal('24/7 AI Guest Concierge')}
+                onClick={() => setShowProModal('24/7 AI Concierge Βοηθός')}
                 className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-95"
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>AI Pro Add-on</span>
+                <span>AI Pro Προσθήκη</span>
               </button>
             </div>
 
             <div className="rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm">
-              <FieldLabel hint="Special quirks, secret tips, exact trash location, heating instructions...">
-                Apartment AI Context & Knowledge
+              <FieldLabel hint="Ιδιαιτερότητες σπιτιού, οδηγίες θερμοσίφωνα, ανακύκλωση, μυστικά tips...">
+                Ειδικές Οδηγίες & Γνώση για το AI
               </FieldLabel>
               <textarea
                 rows={10}
                 value={form.ai_custom_instructions}
                 onChange={(e) => set('ai_custom_instructions')(e.target.value)}
-                placeholder="Example:&#10;- The water heater switch is located in the hallway cabinet.&#10;- Recycling bins are collected every Tuesday morning.&#10;- The best nearby bakery is 100m down the street.&#10;- Late night check-in: lockbox is lit by an outdoor motion sensor."
+                placeholder="Παράδειγμα:&#10;- Ο διακόπτης για το ζεστό νερό βρίσκεται αριστερά από την πόρτα του μπάνιου.&#10;- Ο μπλε κάδος ανακύκλωσης αδειάζει κάθε Τρίτη πρωί.&#10;- Ο καλύτερος κοντινός φούρνος απέχει μόλις 80μ. στα δεξιά.&#10;- Για νυχτερινή άφιξη: η κλειδοθήκη φωτίζεται από φωτοκύτταρο."
                 className={FIELD_CLASS + ' mt-2'}
               />
             </div>
@@ -1471,12 +1473,12 @@ export default function AdminPage() {
         )}
       </div>
 
-      {/* Sticky Save Bar */}
+      {/* Κάτω Μπάρα Αποθήκευσης */}
       {activeSection !== 'places' && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200/60 bg-white/95 backdrop-blur-xl">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-3.5">
             <p className="hidden text-xs text-stone-500 sm:block">
-              {form.id ? `Editing property: ${form.name}` : 'Creating a new property.'}
+              {form.id ? `Επεξεργασία καταλύματος: ${form.name}` : 'Δημιουργία νέου καταλύματος.'}
             </p>
             <button
               type="button"
@@ -1486,13 +1488,13 @@ export default function AdminPage() {
               style={{ background: 'linear-gradient(135deg, #10B981, #047857)' }}
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {saving ? 'Saving…' : form.id ? 'Save Changes' : 'Create Property'}
+              {saving ? 'Αποθήκευση…' : form.id ? 'Αποθήκευση Αλλαγών' : 'Δημιουργία Καταλύματος'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Pro Upgrade Modal */}
+      {/* Pro Αναβάθμιση Modal */}
       {showProModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
@@ -1510,9 +1512,9 @@ export default function AdminPage() {
             </p>
 
             <div className="mt-4 flex flex-col gap-2 rounded-2xl bg-stone-50 p-3.5 text-xs text-stone-700">
-              <span className="flex items-center gap-2 font-medium"><Check className="h-3.5 w-3.5 text-emerald-600" /> Δικά σας custom links & τηλέφωνα</span>
-              <span className="flex items-center gap-2 font-medium"><Check className="h-3.5 w-3.5 text-emerald-600" /> AI Concierge 24/7 Chatbot</span>
-              <span className="flex items-center gap-2 font-medium"><Check className="h-3.5 w-3.5 text-emerald-600" /> Άμεση ενεργοποίηση χωρίς συμβόλαιο</span>
+              <span className="flex items-center gap-2 font-medium"><Check className="h-3.5 w-3.5 text-emerald-600" /> Δικά σας προσαρμοσμένα links & τηλέφωνα</span>
+              <span className="flex items-center gap-2 font-medium"><Check className="h-3.5 w-3.5 text-emerald-600" /> 24/7 AI Concierge Chatbot για επισκέπτες</span>
+              <span className="flex items-center gap-2 font-medium"><Check className="h-3.5 w-3.5 text-emerald-600" /> Άμεση ενεργοποίηση χωρίς συμβόλαια</span>
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -1538,12 +1540,12 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Place Modal with Direct Upload */}
+      {/* Παράθυρο Προσθήκης / Επεξεργασίας Σημείου */}
       {editingPlace && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm">
           <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4">
-              <h3 className="text-base font-bold text-stone-900">{editingPlace.id ? 'Edit Place' : 'Add New Place'}</h3>
+              <h3 className="text-base font-bold text-stone-900">{editingPlace.id ? 'Επεξεργασία Σημείου' : 'Προσθήκη Νέου Σημείου'}</h3>
               <button type="button" onClick={() => setEditingPlace(null)} className="text-stone-400 hover:text-stone-700">
                 <X className="h-5 w-5" />
               </button>
@@ -1551,7 +1553,7 @@ export default function AdminPage() {
 
             <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
               <div>
-                <label className="text-xs font-semibold uppercase text-stone-500">Category</label>
+                <label className="text-xs font-semibold uppercase text-stone-500">Κατηγορία</label>
                 <select
                   value={editingPlace.category}
                   onChange={(e) => setEditingPlace({ ...editingPlace, category: e.target.value as PlaceCategory })}
@@ -1566,55 +1568,55 @@ export default function AdminPage() {
               </div>
 
               <TextField
-                label="Place Name"
+                label="Όνομα Σημείου / Επιχείρησης"
                 value={editingPlace.name}
                 onChange={(val) => setEditingPlace({ ...editingPlace, name: val })}
-                placeholder="e.g. Local Bakery & Cafe"
+                placeholder="π.χ. Παραδοσιακός Φούρνος & Καφέ"
               />
 
               <MultilingualField
-                label="Description"
+                label="Περιγραφή"
                 value={editingPlace.description}
                 onChange={(val) => setEditingPlace({ ...editingPlace, description: val })}
               />
 
               <FileUploadField
-                label="Place Photo / Image"
+                label="Φωτογραφία Σημείου"
                 value={editingPlace.image_url}
                 onChange={(val) => setEditingPlace({ ...editingPlace, image_url: val })}
                 onToast={pushToast}
-                hint="PNG, JPG, WEBP, AVIF, PDF from your device"
+                hint="PNG, JPG, WEBP από τη συσκευή σας"
               />
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <TextField
-                  label="Google Rating (1.0 - 5.0)"
+                  label="Βαθμολογία Google (1.0 - 5.0)"
                   value={editingPlace.google_rating}
                   onChange={(val) => setEditingPlace({ ...editingPlace, google_rating: val })}
                   placeholder="4.8"
                 />
                 <TextField
-                  label="Phone Number"
+                  label="Τηλέφωνο Επικοινωνίας"
                   value={editingPlace.phone}
                   onChange={(val) => setEditingPlace({ ...editingPlace, phone: val })}
-                  placeholder="+30 210 000 0000"
+                  placeholder="+30 28310 12345"
                   type="tel"
                 />
               </div>
 
               <TextField
-                label="Address / Location on Google Maps"
+                label="Διεύθυνση / Τοποθεσία στο Google Maps"
                 value={editingPlace.address}
                 onChange={(val) => setEditingPlace({ ...editingPlace, address: val })}
-                placeholder="e.g. Main Street 24, City Center"
+                placeholder="π.χ. Αρκαδίου 15, Παλιά Πόλη"
               />
 
               {editingPlace.category === 'beaches' && (
                 <div className="rounded-2xl border border-sky-100 bg-sky-50/50 p-4 flex flex-col gap-3">
-                  <span className="text-xs font-bold uppercase text-sky-800">🏖️ Beach Wind Settings</span>
+                  <span className="text-xs font-bold uppercase text-sky-800">🏖️ Ρυθμίσεις Ανέμου Παραλίας</span>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="text-xs font-semibold text-stone-500">Wind Status</label>
+                      <label className="text-xs font-semibold text-stone-500">Κατάσταση Ανέμου</label>
                       <select
                         value={editingPlace.wind_status}
                         onChange={(e) =>
@@ -1625,16 +1627,16 @@ export default function AdminPage() {
                         }
                         className={FIELD_CLASS + ' mt-1'}
                       >
-                        <option value="">Default (No badge)</option>
-                        <option value="sheltered">🛡️ Sheltered (Best for windy days)</option>
-                        <option value="exposed">💨 Exposed</option>
+                        <option value="">Προεπιλογή (Χωρίς σήμανση)</option>
+                        <option value="sheltered">🛡️ Απάνεμη (Ιδανική όταν φυσάει)</option>
+                        <option value="exposed">💨 Εκτεθειμένη στον άνεμο</option>
                       </select>
                     </div>
                     <TextField
-                      label="Wind Note"
+                      label="Σημείωση Ανέμου"
                       value={editingPlace.wind_note}
                       onChange={(val) => setEditingPlace({ ...editingPlace, wind_note: val })}
-                      placeholder="e.g. Protected from North winds"
+                      placeholder="π.χ. Προστατεύεται από τους βοριάδες"
                     />
                   </div>
                 </div>
@@ -1647,7 +1649,7 @@ export default function AdminPage() {
                 onClick={() => setEditingPlace(null)}
                 className="rounded-xl border border-stone-200 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-100"
               >
-                Cancel
+                Ακύρωση
               </button>
               <button
                 type="button"
@@ -1656,7 +1658,7 @@ export default function AdminPage() {
                 className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md hover:bg-emerald-700 disabled:opacity-60"
               >
                 {savingPlace && <Loader2 className="h-4 w-4 animate-spin" />}
-                {editingPlace.id ? 'Save Changes' : 'Add Place'}
+                {editingPlace.id ? 'Αποθήκευση Αλλαγών' : 'Προσθήκη Σημείου'}
               </button>
             </div>
           </div>
