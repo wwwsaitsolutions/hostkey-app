@@ -313,6 +313,8 @@ const INFO_CATEGORIES: InfoCategoryConfig[] = [
 type ExploreTile = CategoryConfig | InfoCategoryConfig;
 const EXPLORE_TILES: ExploreTile[] = [...EXPLORE_CATEGORIES, ...INFO_CATEGORIES];
 
+type ExploreSelection = { kind: 'places'; key: PlaceCategory } | { kind: 'info'; key: InfoCategoryKey };
+
 const MANUAL_ICONS: Record<ManualIconKey, typeof Wifi> = {
   wifi: Wifi,
   tv: Tv,
@@ -2215,7 +2217,6 @@ function HeroHeader({
 
   return (
     <div>
-      {/* Curved Container for Hero Image */}
       <div className="px-4 pt-4">
         <div className="relative h-80 w-full overflow-hidden rounded-[32px] bg-stone-800 shadow-sm border border-stone-200/50">
           {coverImage ? (
@@ -2791,6 +2792,43 @@ function ManualTab({
   );
 }
 
+function InfoCategoryDetail({ tile, property, language }: { tile: InfoCategoryConfig; property: Property; language: string }) {
+  const t = useT();
+  const body = localize(tile.field(property), language) || t(`explore.info_${tile.key}_desc`, tile.fallback);
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="rounded-2xl border border-stone-200/60 bg-white p-4 shadow-sm shadow-stone-900/5">
+        <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700">{body}</p>
+      </div>
+      <div className="flex flex-col gap-2.5">
+        <motion.a
+          whileTap={{ scale: 0.97 }}
+          transition={TAP_SPRING}
+          href={nearbyMapsHref(tile.mapsQuery, property)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-3 text-sm font-semibold text-stone-900 shadow-sm transition-shadow hover:shadow-md"
+        >
+          <MapPin className="h-4 w-4" />
+          {t('explore.find_nearby', 'Find Nearby on Google Maps')}
+        </motion.a>
+        {tile.key === 'taxi' && property.taxi_phone && (
+          <motion.a
+            whileTap={{ scale: 0.97 }}
+            transition={TAP_SPRING}
+            href={telHref(property.taxi_phone)}
+            className="flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white shadow-md"
+            style={{ background: TURQUOISE }}
+          >
+            <PhoneCall className="h-4 w-4" />
+            {t('explore.call_radiotaxi', 'Call Radiotaxi')}
+          </motion.a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ExploreTab({
   places,
   property,
@@ -2918,7 +2956,6 @@ function ExploreTab({
               <>
                 {selected.kind === 'places' && selected.key === 'beaches' && <LiveWindStrip />}
 
-                {/* Customized Rentals & Transfers Content */}
                 {selected.kind === 'places' && selected.key === 'rentals' && (
                   <div className="mb-4 flex flex-col gap-3.5">
                     {(carRentalsBody || carRentalsUrl) && (
