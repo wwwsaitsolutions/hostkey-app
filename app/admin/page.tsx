@@ -4,26 +4,29 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import {
   AlertCircle,
   BookOpen,
+  Bot,
   CheckCircle2,
+  Compass,
   DoorOpen,
   ExternalLink,
   Home as HomeIcon,
   LifeBuoy,
   Loader2,
+  MapPin,
+  Phone,
   Plus,
   Save,
   Sparkles,
+  Star,
+  Trash2,
   X,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 /* ------------------------------------------------------------------ */
-/*  Types                                                              */
+/*  Types                                                             */
 /* ------------------------------------------------------------------ */
 
-/** Editable bilingual (EN/EL) value. `rest` silently carries any other
- * language keys already present on the row (fr, de, ...) so saving from
- * this admin never clobbers translations added elsewhere. */
 interface BilingualValue {
   en: string;
   el: string;
@@ -40,10 +43,65 @@ interface PropertySummary {
   slug: string;
 }
 
+export type PlaceCategory =
+  | 'beaches'
+  | 'groceries'
+  | 'food'
+  | 'nightlife'
+  | 'gyms'
+  | 'culture'
+  | 'activities'
+  | 'rentals';
+
+const CATEGORY_OPTIONS: { value: PlaceCategory; label: string }[] = [
+  { value: 'beaches', label: '🏖️ Beaches & Weather' },
+  { value: 'groceries', label: '🥖 Bakery & Supermarkets' },
+  { value: 'food', label: '🍽️ Food & Taverns' },
+  { value: 'nightlife', label: '🍸 Bars & Nightlife' },
+  { value: 'gyms', label: '💪 Gyms & Pools' },
+  { value: 'culture', label: '🏛️ Sights & Culture' },
+  { value: 'activities', label: '🥾 Activities & Cruises' },
+  { value: 'rentals', label: '🚗 Rentals & Transfers' },
+];
+
+export interface PlaceItem {
+  id: string;
+  category: PlaceCategory;
+  name: string;
+  description: BilingualValue;
+  image_url: string;
+  google_rating: string;
+  wind_status: 'sheltered' | 'exposed' | '';
+  wind_note: string;
+  phone: string;
+  address: string;
+}
+
+function emptyPlace(): PlaceItem {
+  return {
+    id: '',
+    category: 'food',
+    name: '',
+    description: emptyBilingual(),
+    image_url: '',
+    google_rating: '4.8',
+    wind_status: '',
+    wind_note: '',
+    phone: '',
+    address: '',
+  };
+}
+
+export interface EmergencyContact {
+  label: string;
+  phone: string;
+  maps_query?: string;
+}
+
 interface PropertyFormState {
   id: string | null;
 
-  // --- Section 1: Basic info & access ---
+  // --- Section 1: Basic info & Host ---
   name: string;
   slug: string;
   address: string;
@@ -59,12 +117,14 @@ interface PropertyFormState {
   host_email: string;
   host_avatar_url: string;
 
-  // --- Section 2: Arrival & logistics ---
+  // --- Section 2: Arrival & Logistics ---
   building_access: BilingualValue;
   elevator_info: BilingualValue;
   parking_info: BilingualValue;
   parking_maps_url: string;
   late_arrival_info: BilingualValue;
+  checkin_steps_text: string;
+  checkout_steps_text: string;
 
   // --- Section 3: House manual ---
   tap_water_info: BilingualValue;
@@ -82,7 +142,7 @@ interface PropertyFormState {
   trash_maps_url: string;
   house_rules: BilingualValue;
 
-  // --- Section 4: Local mobility & safety ---
+  // --- Section 4: Mobility & Safety ---
   luggage_storage_info: BilingualValue;
   bus_transport_info: BilingualValue;
   taxi_station_info: BilingualValue;
@@ -91,9 +151,12 @@ interface PropertyFormState {
   first_aid_location: BilingualValue;
   pharmacy_phone: string;
   pharmacy_finder_url: string;
+
+  // --- Section 5: AI Knowledge Base ---
+  ai_custom_instructions: string;
 }
 
-type SectionKey = 'basic' | 'arrival' | 'manual' | 'mobility';
+type SectionKey = 'basic' | 'arrival' | 'manual' | 'mobility' | 'safety' | 'places' | 'ai';
 
 interface ToastItem {
   id: number;
@@ -102,21 +165,24 @@ interface ToastItem {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Static config                                                      */
+/*  Static config                                                     */
 /* ------------------------------------------------------------------ */
 
 const SECTIONS: { key: SectionKey; label: string; icon: typeof HomeIcon }[] = [
-  { key: 'basic', label: 'Basic Info & Access', icon: HomeIcon },
-  { key: 'arrival', label: 'Arrival & Logistics', icon: DoorOpen },
+  { key: 'basic', label: 'Basic & Host Info', icon: HomeIcon },
+  { key: 'arrival', label: 'Arrival & Lockbox', icon: DoorOpen },
   { key: 'manual', label: 'House Manual', icon: BookOpen },
-  { key: 'mobility', label: 'Local & Safety', icon: LifeBuoy },
+  { key: 'mobility', label: 'Local Mobility', icon: LifeBuoy },
+  { key: 'safety', label: 'Emergency & Safety', icon: Phone },
+  { key: 'places', label: 'Explore Places', icon: Compass },
+  { key: 'ai', label: 'AI Concierge Knowledge', icon: Bot },
 ];
 
 const FIELD_CLASS =
   'w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-stone-900 shadow-sm outline-none transition-colors placeholder:text-stone-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20';
 
 /* ------------------------------------------------------------------ */
-/*  Helpers — form <-> Supabase row conversion                         */
+/*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
 function emptyForm(): PropertyFormState {
@@ -142,6 +208,8 @@ function emptyForm(): PropertyFormState {
     parking_info: emptyBilingual(),
     parking_maps_url: '',
     late_arrival_info: emptyBilingual(),
+    checkin_steps_text: '',
+    checkout_steps_text: '',
 
     tap_water_info: emptyBilingual(),
     plumbing_rules: emptyBilingual(),
@@ -166,12 +234,11 @@ function emptyForm(): PropertyFormState {
     first_aid_location: emptyBilingual(),
     pharmacy_phone: '',
     pharmacy_finder_url: '',
+
+    ai_custom_instructions: '',
   };
 }
 
-/** Normalizes a Supabase column value (null, a legacy plain string, or a
- * `{ en, el, fr, ... }` jsonb object) into an editable BilingualValue,
- * preserving any language keys beyond EN/EL in `rest`. */
 function toBilingual(raw: unknown): BilingualValue {
   if (raw == null) return emptyBilingual();
   if (typeof raw === 'string') return { en: raw, el: '' };
@@ -183,9 +250,6 @@ function toBilingual(raw: unknown): BilingualValue {
   return emptyBilingual();
 }
 
-/** Serializes a BilingualValue back to a jsonb-ready object, merging in any
- * preserved non-EN/EL languages. Returns null when there is nothing to
- * store, so the column can be cleared out cleanly. */
 function fromBilingual(value: BilingualValue): Record<string, string> | null {
   const merged: Record<string, string> = { ...(value.rest ?? {}) };
   if (value.en.trim()) merged.en = value.en.trim();
@@ -193,8 +257,6 @@ function fromBilingual(value: BilingualValue): Record<string, string> | null {
   return Object.keys(merged).length > 0 ? merged : null;
 }
 
-/** A plain text column: empty input becomes `null` so optional columns stay
- * clean rather than filling up with empty strings. */
 function fromText(value: string): string | null {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
@@ -216,6 +278,11 @@ function rowToForm(row: Record<string, unknown>): PropertyFormState {
   const str = (key: string): string => {
     const v = row[key];
     return typeof v === 'string' ? v : v == null ? '' : String(v);
+  };
+
+  const stepsToStr = (arr: unknown): string => {
+    if (Array.isArray(arr)) return arr.join('\n');
+    return '';
   };
 
   return {
@@ -240,6 +307,8 @@ function rowToForm(row: Record<string, unknown>): PropertyFormState {
     parking_info: toBilingual(row.parking_info),
     parking_maps_url: str('parking_maps_url'),
     late_arrival_info: toBilingual(row.late_arrival_info),
+    checkin_steps_text: stepsToStr(row.checkin_steps),
+    checkout_steps_text: stepsToStr(row.checkout_steps),
 
     tap_water_info: toBilingual(row.tap_water_info),
     plumbing_rules: toBilingual(row.plumbing_rules),
@@ -264,10 +333,20 @@ function rowToForm(row: Record<string, unknown>): PropertyFormState {
     first_aid_location: toBilingual(row.first_aid_location),
     pharmacy_phone: str('pharmacy_phone'),
     pharmacy_finder_url: str('pharmacy_finder_url'),
+
+    ai_custom_instructions: str('ai_custom_instructions'),
   };
 }
 
 function formToPayload(form: PropertyFormState): Record<string, unknown> {
+  const parseLines = (text: string): string[] | null => {
+    const lines = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+    return lines.length > 0 ? lines : null;
+  };
+
   return {
     name: form.name.trim(),
     slug: form.slug.trim(),
@@ -289,6 +368,8 @@ function formToPayload(form: PropertyFormState): Record<string, unknown> {
     parking_info: fromBilingual(form.parking_info),
     parking_maps_url: fromText(form.parking_maps_url),
     late_arrival_info: fromBilingual(form.late_arrival_info),
+    checkin_steps: parseLines(form.checkin_steps_text),
+    checkout_steps: parseLines(form.checkout_steps_text),
 
     tap_water_info: fromBilingual(form.tap_water_info),
     plumbing_rules: fromBilingual(form.plumbing_rules),
@@ -313,11 +394,13 @@ function formToPayload(form: PropertyFormState): Record<string, unknown> {
     first_aid_location: fromBilingual(form.first_aid_location),
     pharmacy_phone: fromText(form.pharmacy_phone),
     pharmacy_finder_url: fromText(form.pharmacy_finder_url),
+
+    ai_custom_instructions: fromText(form.ai_custom_instructions),
   };
 }
 
 /* ------------------------------------------------------------------ */
-/*  Small reusable form controls                                       */
+/*  Form Controls                                                     */
 /* ------------------------------------------------------------------ */
 
 function FieldLabel({ children, hint }: { children: ReactNode; hint?: string }) {
@@ -352,8 +435,6 @@ function TextField({
   );
 }
 
-/** A single labeled card holding both EN and EL inputs for one bilingual
- * content field, side by side on wide screens. */
 function BilingualField({
   label,
   value,
@@ -433,10 +514,6 @@ function SectionHeading({ title, subtitle }: { title: string; subtitle: string }
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Toasts                                                             */
-/* ------------------------------------------------------------------ */
-
 function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
   if (toasts.length === 0) return null;
   return (
@@ -464,7 +541,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
 }
 
 /* ------------------------------------------------------------------ */
-/*  Page                                                               */
+/*  Main Component                                                    */
 /* ------------------------------------------------------------------ */
 
 export default function AdminPage() {
@@ -475,6 +552,13 @@ export default function AdminPage() {
   const [loadingProperty, setLoadingProperty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  // Places
+  const [places, setPlaces] = useState<PlaceItem[]>([]);
+  const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<PlaceCategory | 'all'>('all');
+  const [editingPlace, setEditingPlace] = useState<PlaceItem | null>(null);
+  const [savingPlace, setSavingPlace] = useState(false);
 
   const pushToast = useCallback((type: 'success' | 'error', message: string) => {
     const id = Date.now() + Math.random();
@@ -496,19 +580,45 @@ export default function AdminPage() {
       pushToast('error', `Could not load properties: ${error.message}`);
       return;
     }
-    setPropertyList((data as PropertySummary[]) ?? []);
+    const list = (data as PropertySummary[]) ?? [];
+    setPropertyList(list);
+    if (list.length > 0 && !form.id) {
+      handleSelectProperty(list[0].id);
+    }
+  }, [pushToast]);
+
+  const loadPlaces = useCallback(async () => {
+    setLoadingPlaces(true);
+    const { data, error } = await supabase.from('places').select('*').order('name', { ascending: true });
+    setLoadingPlaces(false);
+    if (error) {
+      pushToast('error', `Could not load places: ${error.message}`);
+      return;
+    }
+    const mapped: PlaceItem[] = ((data as Record<string, unknown>[]) ?? []).map((row) => ({
+      id: String(row.id),
+      category: row.category as PlaceCategory,
+      name: String(row.name ?? ''),
+      description: toBilingual(row.description),
+      image_url: String(row.image_url ?? ''),
+      google_rating: row.google_rating != null ? String(row.google_rating) : '4.8',
+      wind_status: (row.wind_status as 'sheltered' | 'exposed') || '',
+      wind_note: String(row.wind_note ?? ''),
+      phone: String(row.phone ?? ''),
+      address: String(row.address ?? ''),
+    }));
+    setPlaces(mapped);
   }, [pushToast]);
 
   useEffect(() => {
     loadPropertyList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    loadPlaces();
+  }, [loadPropertyList, loadPlaces]);
 
   const handleSelectProperty = useCallback(
     async (id: string) => {
       if (!id) {
         setForm(emptyForm());
-        setActiveSection('basic');
         return;
       }
       setLoadingProperty(true);
@@ -519,7 +629,6 @@ export default function AdminPage() {
         return;
       }
       setForm(rowToForm(data as Record<string, unknown>));
-      setActiveSection('basic');
     },
     [pushToast],
   );
@@ -565,6 +674,60 @@ export default function AdminPage() {
     }
   }, [form, loadPropertyList, pushToast]);
 
+  const handleSavePlace = useCallback(async () => {
+    if (!editingPlace) return;
+    if (!editingPlace.name.trim()) {
+      pushToast('error', 'Please enter a place name.');
+      return;
+    }
+
+    setSavingPlace(true);
+    const payload = {
+      category: editingPlace.category,
+      name: editingPlace.name.trim(),
+      description: fromBilingual(editingPlace.description),
+      image_url: fromText(editingPlace.image_url),
+      google_rating: editingPlace.google_rating ? parseFloat(editingPlace.google_rating) : null,
+      wind_status: editingPlace.wind_status || null,
+      wind_note: fromText(editingPlace.wind_note),
+      phone: fromText(editingPlace.phone),
+      address: fromText(editingPlace.address),
+    };
+
+    try {
+      if (editingPlace.id) {
+        const { error } = await supabase.from('places').update(payload).eq('id', editingPlace.id);
+        if (error) throw error;
+        pushToast('success', `"${editingPlace.name}" updated successfully.`);
+      } else {
+        const { error } = await supabase.from('places').insert(payload);
+        if (error) throw error;
+        pushToast('success', `"${editingPlace.name}" added successfully.`);
+      }
+      setEditingPlace(null);
+      await loadPlaces();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not save place.';
+      pushToast('error', message);
+    } finally {
+      setSavingPlace(false);
+    }
+  }, [editingPlace, loadPlaces, pushToast]);
+
+  const handleDeletePlace = useCallback(
+    async (id: string, name: string) => {
+      if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+      const { error } = await supabase.from('places').delete().eq('id', id);
+      if (error) {
+        pushToast('error', `Could not delete place: ${error.message}`);
+        return;
+      }
+      pushToast('success', `"${name}" was deleted.`);
+      await loadPlaces();
+    },
+    [loadPlaces, pushToast],
+  );
+
   const set = useCallback(<K extends keyof PropertyFormState>(key: K) => {
     return (value: PropertyFormState[K]) => {
       setForm((prev) => ({ ...prev, [key]: value }));
@@ -573,11 +736,16 @@ export default function AdminPage() {
 
   const liveGuideHref = useMemo(() => (form.slug.trim() ? `/${form.slug.trim()}` : null), [form.slug]);
 
+  const filteredPlaces = useMemo(() => {
+    if (selectedCategoryFilter === 'all') return places;
+    return places.filter((p) => p.category === selectedCategoryFilter);
+  }, [places, selectedCategoryFilter]);
+
   return (
-    <div className="min-h-screen bg-[#F7F4EC] pb-24 text-stone-900">
+    <div className="min-h-screen bg-[#F7F4EC] pb-28 text-stone-900">
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
-      {/* Header + property selector */}
+      {/* Header */}
       <div className="sticky top-0 z-30 border-b border-stone-200/60 bg-[#F7F4EC]/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-5">
           <div className="flex items-center gap-3">
@@ -585,8 +753,8 @@ export default function AdminPage() {
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-stone-900">Property Admin</h1>
-              <p className="text-xs text-stone-500">Manage properties and their multi-language guidebook content</p>
+              <h1 className="text-lg font-bold tracking-tight text-stone-900">Hostkey Admin Control</h1>
+              <p className="text-xs text-stone-500">Manage all guest portal data, contacts, manual & AI knowledge</p>
             </div>
           </div>
 
@@ -596,7 +764,7 @@ export default function AdminPage() {
                 value={form.id ?? ''}
                 onChange={(e) => handleSelectProperty(e.target.value)}
                 disabled={loadingList || loadingProperty}
-                className={FIELD_CLASS + ' flex-1 disabled:opacity-60'}
+                className={FIELD_CLASS + ' flex-1 disabled:opacity-60 font-semibold'}
               >
                 <option value="">{loadingList ? 'Loading properties…' : '— Select a property —'}</option>
                 {propertyList.map((p) => (
@@ -629,16 +797,9 @@ export default function AdminPage() {
               </a>
             )}
           </div>
-
-          {!form.id && (
-            <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-medium text-amber-800">
-              <Sparkles className="h-3.5 w-3.5" />
-              New property — fill in the details below and press Save to create it.
-            </div>
-          )}
         </div>
 
-        {/* Section tabs */}
+        {/* Section Tabs */}
         <div className="mx-auto max-w-5xl px-5">
           <div className="flex gap-1 overflow-x-auto pb-3">
             {SECTIONS.map((section) => {
@@ -662,12 +823,15 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Form body */}
+      {/* Form Content */}
       <div className="mx-auto max-w-5xl px-5 pt-6">
+        {/* 1. Basic & Host Info */}
         {activeSection === 'basic' && (
           <div className="flex flex-col gap-6">
-            <SectionHeading title="Basic Info & Access" subtitle="Identity, address, self check-in credentials, and host contact details." />
-
+            <SectionHeading
+              title="Basic Info & Host Contacts"
+              subtitle="Identification, address, Wi-Fi and direct host channels (used in Direct Support & Help modal)."
+            />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <TextField label="Property Name" value={form.name} onChange={set('name')} placeholder="Rethymno Luxury Suite" />
               <div className="flex flex-col gap-1.5">
@@ -686,7 +850,7 @@ export default function AdminPage() {
                     disabled={!form.name.trim()}
                     className="shrink-0 rounded-xl border border-stone-200 bg-white px-3 text-xs font-semibold text-stone-600 transition-colors hover:bg-stone-50 disabled:opacity-40"
                   >
-                    Generate from name
+                    Generate
                   </button>
                 </div>
               </div>
@@ -695,134 +859,390 @@ export default function AdminPage() {
             <TextField label="Address" value={form.address} onChange={set('address')} placeholder="12 Arkadiou Street, Rethymno, Crete" />
             <TextField label="Cover Image URL" value={form.cover_image} onChange={set('cover_image')} placeholder="https://…" type="url" />
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField label="Check-in Time" value={form.check_in_time} onChange={set('check_in_time')} placeholder="15:00" />
-              <TextField label="Check-out Time" value={form.check_out_time} onChange={set('check_out_time')} placeholder="11:00" />
-            </div>
-
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <TextField label="Smart Lock / Keysafe Code" value={form.keysafe_code} onChange={set('keysafe_code')} placeholder="4821" />
               <TextField label="Wi-Fi SSID" value={form.wifi_ssid} onChange={set('wifi_ssid')} placeholder="Suite_5G" />
               <TextField label="Wi-Fi Password" value={form.wifi_password} onChange={set('wifi_password')} placeholder="••••••••" />
             </div>
 
-            <div className="mt-2 rounded-2xl border border-stone-200/70 bg-white p-4 shadow-sm shadow-stone-900/5">
-              <p className="mb-3 text-sm font-semibold text-stone-900">Host Details</p>
+            <div className="mt-2 rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm shadow-stone-900/5">
+              <p className="mb-3 text-sm font-bold text-stone-900">Direct Host Support & Contact Details</p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <TextField label="Host Name" value={form.host_name} onChange={set('host_name')} placeholder="Maria" />
+                <TextField label="Host Display Name" value={form.host_name} onChange={set('host_name')} placeholder="Maria" />
                 <TextField label="Host Avatar URL" value={form.host_avatar_url} onChange={set('host_avatar_url')} placeholder="https://…" type="url" />
-                <TextField label="Host Phone" value={form.host_phone} onChange={set('host_phone')} placeholder="+30 690 000 0000" type="tel" />
-                <TextField
-                  label="Host WhatsApp"
-                  value={form.whatsapp_number}
-                  onChange={set('whatsapp_number')}
-                  placeholder="+30 690 000 0000"
-                  type="tel"
-                />
-                <TextField label="Host Email" value={form.host_email} onChange={set('host_email')} placeholder="maria@stayguide.gr" type="email" />
+                <TextField label="Host Phone (Call)" value={form.host_phone} onChange={set('host_phone')} placeholder="+30 690 000 0000" type="tel" />
+                <TextField label="Host WhatsApp Number" value={form.whatsapp_number} onChange={set('whatsapp_number')} placeholder="+30 690 000 0000" type="tel" />
+                <TextField label="Host Email" value={form.host_email} onChange={set('host_email')} placeholder="maria@hostkey.gr" type="email" />
               </div>
             </div>
           </div>
         )}
 
+        {/* 2. Arrival & Lockbox */}
         {activeSection === 'arrival' && (
           <div className="flex flex-col gap-5">
-            <SectionHeading title="Arrival & Logistics" subtitle="Building access, parking, and late-arrival guidance — shown in English and Greek." />
-
-            <BilingualField label="Building Access Instructions" value={form.building_access} onChange={set('building_access')} />
-            <BilingualField label="Elevator Info" value={form.elevator_info} onChange={set('elevator_info')} />
-            <BilingualField label="Parking Instructions" value={form.parking_info} onChange={set('parking_info')} />
-            <TextField
-              label="Parking — Google Maps URL"
-              value={form.parking_maps_url}
-              onChange={set('parking_maps_url')}
-              placeholder="https://maps.google.com/…"
-              type="url"
+            <SectionHeading
+              title="Arrival, Lockbox & Check-in / Out"
+              subtitle="Timetables, entrance instructions, parking and interactive step guides."
             />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <TextField label="Check-in Time" value={form.check_in_time} onChange={set('check_in_time')} placeholder="15:00" />
+              <TextField label="Check-out Time" value={form.check_out_time} onChange={set('check_out_time')} placeholder="11:00" />
+            </div>
+
+            <BilingualField label="Building & Elevator Access Instructions" value={form.building_access} onChange={set('building_access')} />
+            <BilingualField label="Elevator Specific Info" value={form.elevator_info} onChange={set('elevator_info')} />
+            <BilingualField label="Parking Instructions" value={form.parking_info} onChange={set('parking_info')} />
+            <TextField label="Parking — Google Maps URL" value={form.parking_maps_url} onChange={set('parking_maps_url')} placeholder="https://maps.google.com/…" type="url" />
             <BilingualField label="Late Arrival Instructions" value={form.late_arrival_info} onChange={set('late_arrival_info')} />
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5 rounded-2xl border border-stone-200/70 bg-white p-4">
+                <FieldLabel hint="One step per line">Check-in Steps (Drawer Modal)</FieldLabel>
+                <textarea
+                  rows={4}
+                  value={form.checkin_steps_text}
+                  onChange={(e) => set('checkin_steps_text')(e.target.value)}
+                  placeholder="Arrive anytime after 15:00...&#10;Open lockbox with code...&#10;Keys are inside..."
+                  className={FIELD_CLASS}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5 rounded-2xl border border-stone-200/70 bg-white p-4">
+                <FieldLabel hint="One step per line">Check-out Steps (Drawer Modal)</FieldLabel>
+                <textarea
+                  rows={4}
+                  value={form.checkout_steps_text}
+                  onChange={(e) => set('checkout_steps_text')(e.target.value)}
+                  placeholder="Checkout is by 11:00...&#10;Turn off AC & lights...&#10;Leave keys in lockbox..."
+                  className={FIELD_CLASS}
+                />
+              </div>
+            </div>
           </div>
         )}
 
+        {/* 3. House Manual */}
         {activeSection === 'manual' && (
           <div className="flex flex-col gap-5">
-            <SectionHeading title="House Manual" subtitle="Every apartment-manual accordion in the guest app — shown in English and Greek." />
-
+            <SectionHeading title="Apartment House Manual" subtitle="Every accordion guide inside the manual tab — bilingual (EN / EL)." />
             <BilingualField label="Tap Water & Drinking Guide" value={form.tap_water_info} onChange={set('tap_water_info')} />
             <BilingualField label="Plumbing & Toilet Paper Rules" value={form.plumbing_rules} onChange={set('plumbing_rules')} />
-            <BilingualField label="Electrical Sockets & Appliances" value={form.sockets_appliances_info} onChange={set('sockets_appliances_info')} />
-            <BilingualField label="TV & Streaming" value={form.tv_streaming_info} onChange={set('tv_streaming_info')} />
+            <BilingualField label="Electrical Sockets & Voltage" value={form.sockets_appliances_info} onChange={set('sockets_appliances_info')} />
+            <BilingualField label="TV & Streaming Apps" value={form.tv_streaming_info} onChange={set('tv_streaming_info')} />
             <BilingualField label="Coffee Machine & Supplies" value={form.coffee_supplies_info} onChange={set('coffee_supplies_info')} />
-            <BilingualField label="Kitchen Appliances" value={form.kitchen_appliances_info} onChange={set('kitchen_appliances_info')} />
-            <BilingualField label="Washing Machine / Laundry" value={form.laundry_info} onChange={set('laundry_info')} />
-            <BilingualField label="Dishwasher" value={form.dishwasher_info} onChange={set('dishwasher_info')} />
+            <BilingualField label="Stove, Oven & Microwave" value={form.kitchen_appliances_info} onChange={set('kitchen_appliances_info')} />
+            <BilingualField label="Washing Machine & Laundry" value={form.laundry_info} onChange={set('laundry_info')} />
+            <BilingualField label="Dishwasher Guide" value={form.dishwasher_info} onChange={set('dishwasher_info')} />
             <BilingualField label="Hot Water / Solar Boiler" value={form.hot_water_info} onChange={set('hot_water_info')} />
-            <BilingualField label="Air Conditioning / Heating" value={form.amenities_info} onChange={set('amenities_info')} />
-            <BilingualField label="Extra Linens & Towels" value={form.linens_towels_info} onChange={set('linens_towels_info')} />
-            <BilingualField label="Trash Instructions" value={form.trash_info} onChange={set('trash_info')} />
-            <TextField
-              label="Trash — Google Maps URL"
-              value={form.trash_maps_url}
-              onChange={set('trash_maps_url')}
-              placeholder="https://maps.google.com/…"
-              type="url"
-            />
+            <BilingualField label="Air Conditioning & Heating" value={form.amenities_info} onChange={set('amenities_info')} />
+            <BilingualField label="Extra Linens, Towels & Pillows" value={form.linens_towels_info} onChange={set('linens_towels_info')} />
+            <BilingualField label="Trash & Recycling Instructions" value={form.trash_info} onChange={set('trash_info')} />
+            <TextField label="Trash Bins — Google Maps Pin URL" value={form.trash_maps_url} onChange={set('trash_maps_url')} placeholder="https://maps.google.com/…" type="url" />
             <BilingualField label="House Rules & Quiet Hours" value={form.house_rules} onChange={set('house_rules')} />
           </div>
         )}
 
+        {/* 4. Local Mobility */}
         {activeSection === 'mobility' && (
           <div className="flex flex-col gap-5">
-            <SectionHeading title="Local Mobility & Safety" subtitle="Getting around, transfers, and emergency information — shown in English and Greek." />
-
-            <BilingualField label="Luggage Storage Info" value={form.luggage_storage_info} onChange={set('luggage_storage_info')} />
-            <BilingualField label="Public Bus / KTEL Info" value={form.bus_transport_info} onChange={set('bus_transport_info')} />
-            <BilingualField label="Taxi Station Info" value={form.taxi_station_info} onChange={set('taxi_station_info')} />
-
+            <SectionHeading title="Local Mobility & Transport" subtitle="Information cards for baggage, public buses, taxi stands and vehicle rentals." />
+            <BilingualField label="Luggage Storage Lockers Info" value={form.luggage_storage_info} onChange={set('luggage_storage_info')} />
+            <BilingualField label="Public Bus / KTEL Timetables & Info" value={form.bus_transport_info} onChange={set('bus_transport_info')} />
+            <BilingualField label="Taxi Ranks & Radio-Taxi Info" value={form.taxi_station_info} onChange={set('taxi_station_info')} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField label="Taxi Phone" value={form.taxi_phone} onChange={set('taxi_phone')} placeholder="+30 28310 00000" type="tel" />
-              <TextField
-                label="Car / Transfers Booking URL"
-                value={form.rentals_booking_url}
-                onChange={set('rentals_booking_url')}
-                placeholder="https://…"
-                type="url"
+              <TextField label="Taxi Phone" value={form.taxi_phone} onChange={set('taxi_phone')} placeholder="+30 28310 25000" type="tel" />
+              <TextField label="Car & Transfer Booking URL" value={form.rentals_booking_url} onChange={set('rentals_booking_url')} placeholder="https://…" type="url" />
+            </div>
+          </div>
+        )}
+
+        {/* 5. Emergency & Safety */}
+        {activeSection === 'safety' && (
+          <div className="flex flex-col gap-5">
+            <SectionHeading title="Emergency, Pharmacy & First Aid" subtitle="Safety information cards shown on the Support tab." />
+            <BilingualField label="First Aid Kit Exact Location" value={form.first_aid_location} onChange={set('first_aid_location')} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <TextField label="Duty Pharmacy Phone" value={form.pharmacy_phone} onChange={set('pharmacy_phone')} placeholder="+30 28310 12345" type="tel" />
+              <TextField label="24/7 Pharmacy Finder URL" value={form.pharmacy_finder_url} onChange={set('pharmacy_finder_url')} placeholder="https://…" type="url" />
+            </div>
+          </div>
+        )}
+
+        {/* 6. Explore Places */}
+        {activeSection === 'places' && (
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <SectionHeading
+                title="Explore Places & Spots"
+                subtitle="Manage beaches, taverns, supermarkets, nightlife & cultural attractions."
               />
+              <button
+                type="button"
+                onClick={() => setEditingPlace(emptyPlace())}
+                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
+              >
+                <Plus className="h-4 w-4" />
+                Add New Place
+              </button>
             </div>
 
-            <BilingualField label="First Aid Kit Location" value={form.first_aid_location} onChange={set('first_aid_location')} />
+            {/* Category Filter Pills */}
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryFilter('all')}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  selectedCategoryFilter === 'all' ? 'bg-stone-900 text-white' : 'bg-white text-stone-600 border border-stone-200'
+                }`}
+              >
+                All Spots ({places.length})
+              </button>
+              {CATEGORY_OPTIONS.map((cat) => {
+                const count = places.filter((p) => p.category === cat.value).length;
+                return (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setSelectedCategoryFilter(cat.value)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${
+                      selectedCategoryFilter === cat.value ? 'bg-stone-900 text-white' : 'bg-white text-stone-600 border border-stone-200'
+                    }`}
+                  >
+                    {cat.label} ({count})
+                  </button>
+                );
+              })}
+            </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField label="Pharmacy Phone" value={form.pharmacy_phone} onChange={set('pharmacy_phone')} placeholder="+30 28310 00000" type="tel" />
-              <TextField
-                label="Pharmacy Finder URL"
-                value={form.pharmacy_finder_url}
-                onChange={set('pharmacy_finder_url')}
-                placeholder="https://…"
-                type="url"
+            {/* Places Grid */}
+            {loadingPlaces ? (
+              <div className="flex items-center justify-center py-12 text-stone-400">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : filteredPlaces.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-400">
+                No places found for this category. Click "Add New Place" to create one.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredPlaces.map((place) => (
+                  <div key={place.id} className="flex flex-col justify-between overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+                    <div>
+                      {place.image_url ? (
+                        <div className="h-36 w-full bg-cover bg-center" style={{ backgroundImage: `url(${place.image_url})` }} />
+                      ) : (
+                        <div className="flex h-36 w-full items-center justify-center bg-stone-100 text-stone-400 text-xs">
+                          No Image
+                        </div>
+                      )}
+                      <div className="p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                            {CATEGORY_OPTIONS.find((c) => c.value === place.category)?.label.split(' ')[1]}
+                          </span>
+                          {place.google_rating && (
+                            <span className="flex items-center gap-0.5 text-xs font-bold text-amber-600">
+                              <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                              {place.google_rating}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="mt-1 text-base font-bold text-stone-900">{place.name}</h3>
+                        <p className="mt-1 line-clamp-2 text-xs text-stone-500">{place.description.en || place.description.el || '—'}</p>
+                      </div>
+                    </div>
+                    <div className="flex border-t border-stone-100 p-2 gap-2 bg-stone-50">
+                      <button
+                        type="button"
+                        onClick={() => setEditingPlace(place)}
+                        className="flex-1 rounded-lg bg-white border border-stone-200 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePlace(place.id, place.name)}
+                        className="rounded-lg p-1.5 text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 7. AI Concierge Knowledge */}
+        {activeSection === 'ai' && (
+          <div className="flex flex-col gap-5">
+            <SectionHeading
+              title="AI Concierge Knowledge Base"
+              subtitle="Custom instructions and facts specific to this apartment. The AI Concierge chat will use this context to answer guests' questions."
+            />
+            <div className="rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm">
+              <FieldLabel hint="Special quirks, secret tips, exact trash location, heating instructions...">
+                Apartment AI Context & Knowledge
+              </FieldLabel>
+              <textarea
+                rows={10}
+                value={form.ai_custom_instructions}
+                onChange={(e) => set('ai_custom_instructions')(e.target.value)}
+                placeholder="Example:&#10;- The water heater booster switch is on the left of the bathroom door.&#10;- Recycling bins are collected every Tuesday morning.&#10;- The best nearby bakery is 'Veneto Bakery' 80m down the alley.&#10;- Late night check-in: keysafe code is illuminated with a torch."
+                className={FIELD_CLASS + ' mt-2'}
               />
             </div>
           </div>
         )}
       </div>
 
-      {/* Sticky save bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200/60 bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-3.5">
-          <p className="hidden text-xs text-stone-500 sm:block">
-            {form.id ? 'Editing an existing property.' : 'Creating a new property.'}
-          </p>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="ml-auto flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-md transition-opacity disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg, #10B981, #047857)' }}
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {saving ? 'Saving…' : form.id ? 'Save Changes' : 'Create Property'}
-          </button>
+      {/* Sticky Save Bar (for Property) */}
+      {activeSection !== 'places' && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200/60 bg-white/95 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-3.5">
+            <p className="hidden text-xs text-stone-500 sm:block">
+              {form.id ? `Editing property: ${form.name}` : 'Creating a new property.'}
+            </p>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="ml-auto flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-md transition-opacity disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg, #10B981, #047857)' }}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {saving ? 'Saving…' : form.id ? 'Save Changes' : 'Create Property'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Place Modal */}
+      {editingPlace && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4">
+              <h3 className="text-base font-bold text-stone-900">{editingPlace.id ? 'Edit Place' : 'Add New Place'}</h3>
+              <button type="button" onClick={() => setEditingPlace(null)} className="text-stone-400 hover:text-stone-700">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-semibold uppercase text-stone-500">Category</label>
+                <select
+                  value={editingPlace.category}
+                  onChange={(e) => setEditingPlace({ ...editingPlace, category: e.target.value as PlaceCategory })}
+                  className={FIELD_CLASS + ' mt-1'}
+                >
+                  {CATEGORY_OPTIONS.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <TextField
+                label="Place Name"
+                value={editingPlace.name}
+                onChange={(val) => setEditingPlace({ ...editingPlace, name: val })}
+                placeholder="e.g. Taverna Othonas"
+              />
+
+              <BilingualField
+                label="Description"
+                value={editingPlace.description}
+                onChange={(val) => setEditingPlace({ ...editingPlace, description: val })}
+              />
+
+              <TextField
+                label="Photo URL"
+                value={editingPlace.image_url}
+                onChange={(val) => setEditingPlace({ ...editingPlace, image_url: val })}
+                placeholder="https://images.unsplash.com/…"
+                type="url"
+              />
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <TextField
+                  label="Google Rating (1.0 - 5.0)"
+                  value={editingPlace.google_rating}
+                  onChange={(val) => setEditingPlace({ ...editingPlace, google_rating: val })}
+                  placeholder="4.8"
+                />
+                <TextField
+                  label="Phone Number"
+                  value={editingPlace.phone}
+                  onChange={(val) => setEditingPlace({ ...editingPlace, phone: val })}
+                  placeholder="+30 28310 12345"
+                  type="tel"
+                />
+              </div>
+
+              <TextField
+                label="Address / Location on Google Maps"
+                value={editingPlace.address}
+                onChange={(val) => setEditingPlace({ ...editingPlace, address: val })}
+                placeholder="Petichaki Square 10, Rethymno"
+              />
+
+              {editingPlace.category === 'beaches' && (
+                <div className="rounded-2xl border border-sky-100 bg-sky-50/50 p-4 flex flex-col gap-3">
+                  <span className="text-xs font-bold uppercase text-sky-800">🏖️ Beach Wind Settings</span>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold text-stone-500">Wind Status</label>
+                      <select
+                        value={editingPlace.wind_status}
+                        onChange={(e) =>
+                          setEditingPlace({
+                            ...editingPlace,
+                            wind_status: e.target.value as 'sheltered' | 'exposed' | '',
+                          })
+                        }
+                        className={FIELD_CLASS + ' mt-1'}
+                      >
+                        <option value="">Default (No badge)</option>
+                        <option value="sheltered">🛡️ Sheltered (Best for windy days)</option>
+                        <option value="exposed">💨 Exposed</option>
+                      </select>
+                    </div>
+                    <TextField
+                      label="Wind Note"
+                      value={editingPlace.wind_note}
+                      onChange={(val) => setEditingPlace({ ...editingPlace, wind_note: val })}
+                      placeholder="e.g. Protected from North winds"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-stone-200 bg-stone-50 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setEditingPlace(null)}
+                className="rounded-xl border border-stone-200 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSavePlace}
+                disabled={savingPlace}
+                className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {savingPlace && <Loader2 className="h-4 w-4 animate-spin" />}
+                {editingPlace.id ? 'Save Changes' : 'Add Place'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
