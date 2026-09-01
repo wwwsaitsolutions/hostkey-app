@@ -703,7 +703,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
 }
 
 /* ------------------------------------------------------------------ */
-/* Main Admin Component with User Isolation                          */
+/* Main Admin Component with Strict User Isolation                    */
 /* ------------------------------------------------------------------ */
 
 export default function AdminPage() {
@@ -744,16 +744,21 @@ export default function AdminPage() {
   useEffect(() => {
     const checkUser = async () => {
       const isMaster = typeof window !== 'undefined' ? localStorage.getItem('hostkey_is_master') : null;
+      const { data: { session } } = await supabase.auth.getSession();
+
       if (isMaster === 'true') {
-        setUser({ email: 'Master Admin' });
+        setUser({ email: 'Master Admin', isMaster: true });
         setAuthChecking(false);
         return;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.replace('/login');
       } else {
+        // Καθαρίζουμε τυχόν παλιό master flag αν ο χρήστης συνδέθηκε κανονικά με email
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('hostkey_is_master');
+        }
         setUser(session.user);
       }
       setAuthChecking(false);
@@ -770,25 +775,54 @@ export default function AdminPage() {
     router.push('/login');
   };
 
-  // Φόρτωση μόνο των καταλυμάτων του συνδεδεμένου χρήστη
+  const handleSelectProperty = useCallback(
+    async (id: string) => {
+      if (!id) {
+        setForm(emptyForm());
+        return;
+      }
+      setLoadingProperty(true);
+      const { data, error } = await supabase.from('properties').select('*').eq('id', id).single();
+      setLoadingProperty(false);
+      if (error || !data) {
+        pushToast('error', `Could not load property: ${error?.message ?? 'not found'}`);
+        return;
+      }
+      setForm(rowToForm(data as Record<string, unknown>));
+    },
+    [pushToast],
+  );
+
+  // Φόρτωση καταλυμάτων με αυστηρό φιλτράρισμα user_id
   const loadPropertyList = useCallback(async () => {
+    const isMaster = typeof window !== 'undefined' && localStorage.getItem('hostkey_is_master') === 'true';
+
     setLoadingList(true);
-    const { data, error } = await supabase
-      .from('properties')
-      .select('id, name, slug')
-      .order('name', { ascending: true });
-    
+    let query = supabase.from('properties').select('id, name, slug').order('name', { ascending: true });
+
+    // Αν δεν είναι Master Admin, φιλτράρουμε αυστηρά με το user_id του συνδεδεμένου χρήστη
+    if (!isMaster && user?.id) {
+      query = query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query;
     setLoadingList(false);
+
     if (error) {
       pushToast('error', `Could not load properties: ${error.message}`);
       return;
     }
+
     const list = (data as PropertySummary[]) ?? [];
     setPropertyList(list);
-    if (list.length > 0 && !form.id) {
+
+    if (list.length > 0) {
       handleSelectProperty(list[0].id);
+    } else {
+      // Αν ο νέος χρήστης δεν έχει κανένα κατάλυμα, καθαρίζουμε τη φόρμα
+      setForm(emptyForm());
     }
-  }, [pushToast]);
+  }, [user?.id, pushToast, handleSelectProperty]);
 
   const loadPlaces = useCallback(async () => {
     setLoadingPlaces(true);
@@ -819,24 +853,6 @@ export default function AdminPage() {
       loadPlaces();
     }
   }, [user, loadPropertyList, loadPlaces]);
-
-  const handleSelectProperty = useCallback(
-    async (id: string) => {
-      if (!id) {
-        setForm(emptyForm());
-        return;
-      }
-      setLoadingProperty(true);
-      const { data, error } = await supabase.from('properties').select('*').eq('id', id).single();
-      setLoadingProperty(false);
-      if (error || !data) {
-        pushToast('error', `Could not load property: ${error?.message ?? 'not found'}`);
-        return;
-      }
-      setForm(rowToForm(data as Record<string, unknown>));
-    },
-    [pushToast],
-  );
 
   const handleCreateNew = useCallback(() => {
     setForm(emptyForm());
