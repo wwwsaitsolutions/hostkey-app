@@ -7,9 +7,24 @@ import {
   LifeBuoy, 
   KeyRound, 
   ArrowRight, 
-  ShieldCheck, 
-  Globe 
+  Globe,
+  Lock,
 } from 'lucide-react';
+
+/* Custom Logo Icon: House + Smart Key */
+function HostkeyLogoIcon() {
+  return (
+    <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-800 text-white shadow-md shadow-emerald-700/20 border-t border-white/30">
+      <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-t from-black/10 to-white/20" />
+      <svg viewBox="0 0 24 24" className="relative h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 10.5L12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 20v-9.5z" />
+        <circle cx="12" cy="11" r="2" fill="currentColor" stroke="none" />
+        <path d="M12 13v4" strokeWidth="2.4" />
+        <path d="M12 15h2" strokeWidth="2" />
+      </svg>
+    </div>
+  );
+}
 
 export default function LandingPage() {
   return (
@@ -17,31 +32,31 @@ export default function LandingPage() {
       {/* Navigation Header */}
       <header className="sticky top-0 z-30 border-b border-stone-200/60 bg-[#F7F4EC]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-md shadow-emerald-600/20">
-              <Sparkles className="h-5 w-5" />
+          
+          {/* Logo with Key & House Icon */}
+          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-95">
+            <HostkeyLogoIcon />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-black tracking-tight text-stone-900">
+                  Host<span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">key</span>
+                </span>
+                <span className="rounded-md bg-emerald-100/80 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-800">
+                  PRO
+                </span>
+              </div>
+              <span className="text-[10px] font-medium tracking-wide text-stone-400 -mt-1">Digital Guest Guidebook</span>
             </div>
-            <div>
-              <span className="text-lg font-bold tracking-tight text-stone-900">Hostkey</span>
-              <span className="ml-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">GUIDEBOOK</span>
-            </div>
-          </div>
+          </Link>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/admin"
-              className="rounded-xl border border-stone-200 bg-white px-4 py-2 text-xs font-semibold text-stone-700 shadow-sm transition-colors hover:bg-stone-50"
-            >
-              Admin Portal
-            </Link>
-            <Link
-              href="/demo"
-              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-700"
-            >
-              <span>Live Demo</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+          {/* Single Admin Portal Entry */}
+          <Link
+            href="/admin"
+            className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 py-2 text-xs font-semibold text-stone-700 shadow-sm transition-colors hover:bg-stone-50"
+          >
+            <Lock className="h-3.5 w-3.5 text-stone-400" />
+            <span>Admin Portal</span>
+          </Link>
         </div>
       </header>
 
@@ -61,19 +76,14 @@ export default function LandingPage() {
             Αντικαταστήστε τα παλιά έντυπα εγχειρίδια με μια διαδραστική, πολυγλωσσική web εφαρμογή. Δώστε στους επισκέπτες σας άμεση πρόσβαση σε Wi-Fi, check-in οδηγίες, ψηφιακό manual και τοπικές προτάσεις.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          {/* Single Focused Call-to-Action */}
+          <div className="mt-9 flex items-center justify-center">
             <Link
               href="/demo"
-              className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              className="flex items-center gap-2.5 rounded-2xl bg-emerald-600 px-8 py-4 text-sm font-bold text-white shadow-xl shadow-emerald-600/25 transition-all hover:scale-[1.02] hover:bg-emerald-700 active:scale-[0.98]"
             >
               <span>Δείτε το Live Demo</span>
               <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/admin"
-              className="flex items-center gap-2 rounded-2xl border border-stone-300 bg-white px-7 py-3.5 text-sm font-bold text-stone-800 shadow-sm transition-all hover:bg-stone-50"
-            >
-              Διαχείριση Καταλυμάτων
             </Link>
           </div>
         </div>

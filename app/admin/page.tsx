@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import Link from 'next/link';
 import {
   AlertCircle,
   BookOpen,
@@ -22,12 +23,13 @@ import {
   Wand2,
   X,
   ImageIcon,
+  Lock,
+  ArrowRight,
+  LogOut,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                             */
-/* ------------------------------------------------------------------ */
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'hostkey2026';
 
 interface MultilingualValue {
   el: string;
@@ -171,10 +173,6 @@ const SECTIONS: { key: SectionKey; label: string; icon: typeof HomeIcon }[] = [
 
 const FIELD_CLASS =
   'w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-stone-900 shadow-sm outline-none transition-colors placeholder:text-stone-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20';
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                           */
-/* ------------------------------------------------------------------ */
 
 function emptyForm(): PropertyFormState {
   return {
@@ -423,10 +421,6 @@ function formToPayload(form: PropertyFormState): Record<string, unknown> {
   };
 }
 
-/* ------------------------------------------------------------------ */
-/*  Form Controls & File Upload Component                             */
-/* ------------------------------------------------------------------ */
-
 function FieldLabel({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
     <span className="flex items-baseline justify-between gap-2">
@@ -459,7 +453,6 @@ function TextField({
   );
 }
 
-/** Direct File/Image Uploader using Supabase Storage */
 function FileUploadField({
   label,
   value,
@@ -692,11 +685,12 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Main Admin Component                                              */
-/* ------------------------------------------------------------------ */
-
 export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [authChecked, setAuthChecked] = useState<boolean>(false);
+  const [passwordInput, setPasswordInput] = useState<string>('');
+  const [passwordError, setPasswordError] = useState<string>('');
+
   const [propertyList, setPropertyList] = useState<PropertySummary[]>([]);
   const [form, setForm] = useState<PropertyFormState>(emptyForm());
   const [activeSection, setActiveSection] = useState<SectionKey>('basic');
@@ -711,6 +705,31 @@ export default function AdminPage() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<PlaceCategory | 'all'>('all');
   const [editingPlace, setEditingPlace] = useState<PlaceItem | null>(null);
   const [savingPlace, setSavingPlace] = useState(false);
+
+  useEffect(() => {
+    const sessionAuth = typeof window !== 'undefined' ? localStorage.getItem('hostkey_admin_auth') : null;
+    if (sessionAuth === 'true') {
+      setIsAuthenticated(true);
+    }
+    setAuthChecked(true);
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === ADMIN_PASSWORD) {
+      localStorage.setItem('hostkey_admin_auth', 'true');
+      setIsAuthenticated(true);
+      setPasswordError('');
+    } else {
+      setPasswordError('Incorrect password. Please try again.');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('hostkey_admin_auth');
+    setIsAuthenticated(false);
+    setPasswordInput('');
+  };
 
   const pushToast = useCallback((type: 'success' | 'error', message: string) => {
     const id = Date.now() + Math.random();
@@ -763,9 +782,11 @@ export default function AdminPage() {
   }, [pushToast]);
 
   useEffect(() => {
-    loadPropertyList();
-    loadPlaces();
-  }, [loadPropertyList, loadPlaces]);
+    if (isAuthenticated) {
+      loadPropertyList();
+      loadPlaces();
+    }
+  }, [isAuthenticated, loadPropertyList, loadPlaces]);
 
   const handleSelectProperty = useCallback(
     async (id: string) => {
@@ -946,6 +967,53 @@ export default function AdminPage() {
     return places.filter((p) => p.category === selectedCategoryFilter);
   }, [places, selectedCategoryFilter]);
 
+  if (!authChecked) return null;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F4EC] p-6 text-stone-900">
+        <div className="w-full max-w-md rounded-3xl border border-stone-200/80 bg-white p-8 shadow-xl shadow-stone-900/5">
+          <div className="flex flex-col items-center text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-600/20">
+              <Lock className="h-7 w-7" />
+            </div>
+            <h1 className="mt-5 text-xl font-bold text-stone-900">Hostkey Admin Portal</h1>
+            <p className="mt-1.5 text-xs text-stone-500">Εισάγετε τον κωδικό πρόσβασης για να διαχειριστείτε τα καταλύματα.</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-4">
+            <div>
+              <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Κωδικός πρόσβασης..."
+                className={FIELD_CLASS + ' text-center tracking-wider'}
+                autoFocus
+              />
+              {passwordError && <p className="mt-2 text-center text-xs font-semibold text-red-600">{passwordError}</p>}
+            </div>
+
+            <button
+              type="submit"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-emerald-700"
+            >
+              <span>Είσοδος στο Portal</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+
+            <Link
+              href="/"
+              className="mt-2 text-center text-xs font-semibold text-stone-400 hover:text-stone-700"
+            >
+              ← Επιστροφή στην Αρχική
+            </Link>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F7F4EC] pb-28 text-stone-900">
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -955,24 +1023,35 @@ export default function AdminPage() {
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-md">
+              <Link href="/" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-md" title="Go to Website Home">
                 <Sparkles className="h-5 w-5" />
-              </div>
+              </Link>
               <div>
                 <h1 className="text-lg font-bold tracking-tight text-stone-900">Hostkey Admin Control</h1>
                 <p className="text-xs text-stone-500">Manage all guest portal data, media uploads, manual & AI knowledge</p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleAutoTranslateAll}
-              disabled={autoTranslatingAll}
-              className="flex items-center gap-2 rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
-            >
-              {autoTranslatingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-              {autoTranslatingAll ? 'Translating All…' : '🪄 Auto-Translate All Fields'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleAutoTranslateAll}
+                disabled={autoTranslatingAll}
+                className="flex items-center gap-2 rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {autoTranslatingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                {autoTranslatingAll ? 'Translating All…' : '🪄 Auto-Translate All Fields'}
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
@@ -1075,7 +1154,6 @@ export default function AdminPage() {
 
             <TextField label="Address" value={form.address} onChange={set('address')} placeholder="Moatsou 44, Rethymno" />
 
-            {/* File upload for Property Cover */}
             <FileUploadField
               label="Apartment Cover Image"
               value={form.cover_image}
@@ -1402,7 +1480,6 @@ export default function AdminPage() {
                 onChange={(val) => setEditingPlace({ ...editingPlace, description: val })}
               />
 
-              {/* Direct file upload for Place Photo */}
               <FileUploadField
                 label="Place Photo / Image"
                 value={editingPlace.image_url}

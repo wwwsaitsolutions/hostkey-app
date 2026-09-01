@@ -2228,37 +2228,37 @@ function HeroHeader({
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
 
+          {/* Top Bar with Back to Hostkey.gr link */}
           <div className="absolute inset-x-4 top-5 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 rounded-full border border-white/30 bg-black/30 py-1.5 pl-1.5 pr-1.5 backdrop-blur-md">
-              <div className="relative h-7 w-7 overflow-hidden rounded-full bg-white/20">
-                {property.host_avatar_url || property.logo_url ? (
-                  <Image
-                    src={(property.host_avatar_url ?? property.logo_url) as string}
-                    alt={property.host_name ?? 'Host'}
-                    fill
-                    sizes="28px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-white">
-                    {(property.host_name ?? property.name)?.charAt(0) ?? '•'}
-                  </div>
-                )}
+            <div className="flex items-center gap-2">
+              <a
+                href="/"
+                className="flex items-center gap-1 rounded-full border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-bold text-white shadow-sm backdrop-blur-md transition-colors hover:bg-black/60"
+                title="Return to Hostkey.gr Home"
+              >
+                <span>← Hostkey.gr</span>
+              </a>
+
+              <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-white/30 bg-black/30 py-1.5 pl-1.5 pr-2.5 backdrop-blur-md">
+                <div className="relative h-6 w-6 overflow-hidden rounded-full bg-white/20">
+                  {property.host_avatar_url || property.logo_url ? (
+                    <Image
+                      src={(property.host_avatar_url ?? property.logo_url) as string}
+                      alt={property.host_name ?? 'Host'}
+                      fill
+                      sizes="24px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-white">
+                      {(property.host_name ?? property.name)?.charAt(0) ?? '•'}
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs font-medium text-white/90">
+                  {property.host_name ?? 'your host'}
+                </span>
               </div>
-              <span className="pr-1 text-xs font-medium text-white/90">
-                {t('home.hosted_by', 'Hosted by')} {property.host_name ?? 'your host'}
-              </span>
-              {paperPlaneHref && (
-                <motion.a
-                  whileTap={{ scale: 0.9 }}
-                  transition={TAP_SPRING}
-                  href={paperPlaneHref}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
-                  aria-label="Email your host"
-                >
-                  <Send className="h-3.5 w-3.5" strokeWidth={2.2} />
-                </motion.a>
-              )}
             </div>
 
             <LanguageSwitcher variant="onImage" />
@@ -2850,7 +2850,7 @@ function ExploreTab({
 
   useEffect(() => {
     if (initialCategory) onDeepLinkConsumed();
-  }, []);
+  }, [initialCategory, onDeepLinkConsumed]);
 
   const shelteredBeach = useMemo(() => places.find((p) => p.category === 'beaches' && p.wind_status === 'sheltered'), [places]);
 
@@ -3310,9 +3310,18 @@ export default function DashboardGrid({ property, places, onOpenAIChat }: Dashbo
 
       {tabState.tab !== 'home' && (
         <div className="sticky top-0 z-30 flex items-center justify-between border-b border-stone-200/60 bg-[#F7F4EC]/90 px-5 py-4 backdrop-blur-xl">
-          <h2 className="text-lg font-semibold uppercase tracking-tight text-stone-900">
-            {t(TABS.find((tb) => tb.key === tabState.tab)?.labelKey ?? '', TABS.find((tb) => tb.key === tabState.tab)?.fallback ?? '')}
-          </h2>
+          <div className="flex items-center gap-2">
+            <a
+              href="/"
+              className="flex items-center gap-1 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-800 shadow-sm transition-colors hover:bg-stone-50"
+              title="Return to Hostkey.gr Home"
+            >
+              <span>← Hostkey.gr</span>
+            </a>
+            <h2 className="text-lg font-semibold uppercase tracking-tight text-stone-900">
+              {t(TABS.find((tb) => tb.key === tabState.tab)?.labelKey ?? '', TABS.find((tb) => tb.key === tabState.tab)?.fallback ?? '')}
+            </h2>
+          </div>
           <LanguageSwitcher variant="onLight" />
         </div>
       )}
