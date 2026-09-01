@@ -512,7 +512,7 @@ function FileUploadField({
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
-          accept="image/*,application/pdf"
+          accept="*/*"
           className="hidden"
         />
 
@@ -548,7 +548,7 @@ function FileUploadField({
 
       {value && (
         <div className="mt-1 flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-2">
-          {value.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) ? (
+          {value.match(/\.(jpeg|jpg|gif|png|webp|avif|svg)($|\?)/i) ? (
             <img src={value} alt="Preview" className="h-12 w-16 rounded-lg object-cover" />
           ) : (
             <div className="flex h-12 w-16 items-center justify-center rounded-lg bg-stone-100 text-stone-400">
@@ -1081,7 +1081,7 @@ export default function AdminPage() {
               value={form.cover_image}
               onChange={set('cover_image')}
               onToast={pushToast}
-              hint="JPG, PNG, WEBP from your device"
+              hint="PNG, JPG, WEBP, AVIF, PDF from your device"
             />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -1408,7 +1408,7 @@ export default function AdminPage() {
                 value={editingPlace.image_url}
                 onChange={(val) => setEditingPlace({ ...editingPlace, image_url: val })}
                 onToast={pushToast}
-                hint="Upload from device or paste image link"
+                hint="PNG, JPG, WEBP, AVIF, PDF from your device"
               />
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

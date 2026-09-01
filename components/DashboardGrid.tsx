@@ -65,16 +65,13 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useBeachWeather } from '@/lib/useBeachWeather';
 
 /* ------------------------------------------------------------------ */
-/*  Types — align these with your Supabase schema                     */
+/*  Types                                                             */
 /* ------------------------------------------------------------------ */
 
 export type AppLanguage = 'en' | 'el' | 'fr' | 'de';
 
-/** A text field that may be a plain string, or a per-language map such as
- * `{ en: '...', el: '...', fr: '...' }`, sourced straight from Supabase. */
 export type LocalizedText = string | Partial<Record<string, string>> | null | undefined;
 
-/** Resolves a LocalizedText value strictly for the active language with safe fallbacks */
 function localize(field: LocalizedText, language: string): string {
   if (field == null) return '';
   if (typeof field === 'object' && !Array.isArray(field)) {
@@ -83,7 +80,6 @@ function localize(field: LocalizedText, language: string): string {
   return String(field);
 }
 
-/** UI-chrome translation hook — wraps `useLanguage()`'s `t(key)` with a safe fallback. */
 function useT(): (key: string, fallback: string) => string {
   const { t } = useLanguage();
   return useCallback(
@@ -157,7 +153,7 @@ export interface Property {
   pharmacy_phone?: string | null;
   trash_maps_url?: string | null;
 
-  // --- Home & Arrival ---
+  // Home & Arrival
   keysafe_code?: string | null;
   building_access?: LocalizedText;
   elevator_info?: LocalizedText;
@@ -165,7 +161,7 @@ export interface Property {
   parking_maps_url?: string | null;
   late_arrival_info?: LocalizedText;
 
-  // --- Apartment manual ---
+  // Apartment manual
   tv_streaming_info?: LocalizedText;
   coffee_supplies_info?: LocalizedText;
   kitchen_appliances_info?: LocalizedText;
@@ -180,7 +176,7 @@ export interface Property {
   plumbing_rules?: LocalizedText;
   sockets_appliances_info?: LocalizedText;
 
-  // --- Explore: practical info tiles ---
+  // Explore
   luggage_storage_info?: LocalizedText;
   bus_transport_info?: LocalizedText;
   taxi_station_info?: LocalizedText;
@@ -190,7 +186,7 @@ export interface Property {
   car_rentals_booking_url?: string | null;
   transfers_info?: LocalizedText;
 
-  // --- Support & safety ---
+  // Support & safety
   first_aid_location?: LocalizedText;
 }
 
@@ -220,20 +216,12 @@ interface DashboardGridProps {
   onOpenAIChat?: () => void;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Brand tokens                                                      */
-/* ------------------------------------------------------------------ */
-
 const TURQUOISE = '#00A896';
 const TURQUOISE_DARK = '#028090';
 const DIRECTIONS_GRADIENT = 'from-[#00B4D8] to-[#0077B6]';
 const DIRECTIONS_SHADOW = 'shadow-[#0077B6]/30';
 
 const TAP_SPRING = { type: 'spring' as const, stiffness: 420, damping: 18 };
-
-/* ------------------------------------------------------------------ */
-/*  Static config                                                     */
-/* ------------------------------------------------------------------ */
 
 type Tab = 'home' | 'manual' | 'explore' | 'support';
 const TAB_ORDER: Tab[] = ['home', 'manual', 'explore', 'support'];
@@ -419,10 +407,6 @@ const DEFAULT_DEPARTURE_CHECKLIST: { key: string; fallback: string }[] = [
   { key: 'home.task_keys', fallback: 'Return keys to the lockbox' },
 ];
 
-/* ------------------------------------------------------------------ */
-/*  Animation variants                                                */
-/* ------------------------------------------------------------------ */
-
 const tabVariants: Variants = {
   enter: (direction: number) => ({ opacity: 0, x: direction >= 0 ? 18 : -18 }),
   center: { opacity: 1, x: 0 },
@@ -444,10 +428,6 @@ const listItem: Variants = {
   hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
 };
-
-/* ------------------------------------------------------------------ */
-/*  Utilities                                                         */
-/* ------------------------------------------------------------------ */
 
 function digitsOnly(value: string): string {
   return value.replace(/[^\d+]/g, '');
@@ -505,10 +485,6 @@ function hashString(value: string): number {
   return Math.abs(hash);
 }
 
-/* ------------------------------------------------------------------ */
-/*  Apple-style squircle icon system                                  */
-/* ------------------------------------------------------------------ */
-
 function IconSquircle({
   icon: Icon,
   tone,
@@ -552,8 +528,6 @@ function WifiPulse({ children }: { children: ReactNode }) {
     </div>
   );
 }
-
-/* ---------- Home tab: check-in / check-out hero illustrations ------- */
 
 function CheckInScene({ className = 'h-16 w-full' }: { className?: string }) {
   const id = useId();
@@ -739,8 +713,6 @@ function ApartmentHeroScene({ className = 'h-full w-full' }: { className?: strin
     </svg>
   );
 }
-
-/* ---------- Explore tab: category mini-scene illustrations ---------- */
 
 function BeachesScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
@@ -1144,8 +1116,6 @@ function ConciergeScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/* ---------- Support tab: emergency + pharmacy badge illustrations --- */
-
 function SirenScene({ className = 'h-6 w-6' }: { className?: string }) {
   const id = useId();
   return (
@@ -1330,10 +1300,6 @@ function IllustratedSquircle({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Toast notifications                                               */
-/* ------------------------------------------------------------------ */
-
 interface ToastMessage {
   id: number;
   text: string;
@@ -1360,10 +1326,6 @@ function ToastStack({ toasts }: { toasts: ToastMessage[] }) {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Rating + wind badges                                              */
-/* ------------------------------------------------------------------ */
 
 function RatingBadge({ value }: { value: number }) {
   return (
@@ -1398,10 +1360,6 @@ function WindBadge({ status, note, compact = false }: { status: 'sheltered' | 'e
     </span>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Live weather                                                      */
-/* ------------------------------------------------------------------ */
 
 interface ForecastDay {
   day?: string;
@@ -1506,10 +1464,6 @@ function LiveWindStrip() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Place card — Explore step 2                                       */
-/* ------------------------------------------------------------------ */
-
 function PlaceCard({ place, language, onOpenDetails }: { place: Place; language: string; onOpenDetails: () => void }) {
   const description = localize(place.description, language);
   return (
@@ -1574,10 +1528,6 @@ function PlaceCard({ place, language, onOpenDetails }: { place: Place; language:
     </motion.div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Place detail drawer                                               */
-/* ------------------------------------------------------------------ */
 
 function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | null; language: string; onOpenChange: (open: boolean) => void }) {
   const description = place ? localize(place.description, language) : '';
@@ -1656,10 +1606,6 @@ function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | n
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Wi-Fi mock QR                                                     */
-/* ------------------------------------------------------------------ */
-
 function WifiQRMock({ seed }: { seed: string }) {
   const size = 11;
   const modules = useMemo(() => {
@@ -1688,10 +1634,6 @@ function WifiQRMock({ seed }: { seed: string }) {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Wi-Fi drawer                                                      */
-/* ------------------------------------------------------------------ */
 
 function WifiDrawer({
   property,
@@ -1829,10 +1771,6 @@ function WifiDrawer({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Check-in / Check-out drawer                                       */
-/* ------------------------------------------------------------------ */
-
 function CheckInOutDrawer({
   property,
   mode,
@@ -1927,10 +1865,6 @@ function CheckInOutDrawer({
     </Drawer.Root>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Get Help drawer                                                   */
-/* ------------------------------------------------------------------ */
 
 function GetHelpDrawer({
   property,
@@ -2067,10 +2001,6 @@ function GetHelpDrawer({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Floating "Get Help" bubble                                        */
-/* ------------------------------------------------------------------ */
-
 function FloatingHelpButton({ onPress }: { onPress: () => void }) {
   return (
     <div className="fixed bottom-24 right-5 z-40">
@@ -2095,10 +2025,6 @@ function FloatingHelpButton({ onPress }: { onPress: () => void }) {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Language switcher                                                 */
-/* ------------------------------------------------------------------ */
 
 const DEFAULT_LANGUAGES: { code: AppLanguage; label: string }[] = [
   { code: 'en', label: 'English' },
@@ -2158,10 +2084,6 @@ function LanguageSwitcher({ variant = 'onImage' }: { variant?: 'onImage' | 'onLi
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Home tab: Fast Arrival cards                                      */
-/* ------------------------------------------------------------------ */
 
 function KeySafeCard({ code, onToast }: { code?: string | null; onToast: (text: string) => void }) {
   const t = useT();
@@ -2253,10 +2175,6 @@ function ArrivalInfoCard({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Hero (Home & Arrival tab)                                         */
-/* ------------------------------------------------------------------ */
-
 function HeroHeader({
   property,
   language,
@@ -2297,74 +2215,77 @@ function HeroHeader({
 
   return (
     <div>
-      <div className="relative h-80 w-full bg-stone-800">
-        {coverImage ? (
-          <Image src={coverImage} alt={property.name} fill priority sizes="480px" className="object-cover" />
-        ) : (
-          <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-stone-700 via-stone-800 to-stone-900">
-            <ApartmentHeroScene className="h-full w-full" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
-
-        <div className="absolute inset-x-4 top-5 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 rounded-full border border-white/30 bg-black/30 py-1.5 pl-1.5 pr-1.5 backdrop-blur-md">
-            <div className="relative h-7 w-7 overflow-hidden rounded-full bg-white/20">
-              {property.host_avatar_url || property.logo_url ? (
-                <Image
-                  src={(property.host_avatar_url ?? property.logo_url) as string}
-                  alt={property.host_name ?? 'Host'}
-                  fill
-                  sizes="28px"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-white">
-                  {(property.host_name ?? property.name)?.charAt(0) ?? '•'}
-                </div>
-              )}
-            </div>
-            <span className="pr-1 text-xs font-medium text-white/90">
-              {t('home.hosted_by', 'Hosted by')} {property.host_name ?? 'your host'}
-            </span>
-            {paperPlaneHref && (
-              <motion.a
-                whileTap={{ scale: 0.9 }}
-                transition={TAP_SPRING}
-                href={paperPlaneHref}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
-                aria-label="Email your host"
-              >
-                <Send className="h-3.5 w-3.5" strokeWidth={2.2} />
-              </motion.a>
-            )}
-          </div>
-
-          <LanguageSwitcher variant="onImage" />
-        </div>
-
-        <div className="absolute inset-x-5 bottom-6">
-          <h1 className="text-3xl font-semibold leading-tight tracking-tight text-white">{property.name}</h1>
-          {property.address && (
-            <div className="mt-2 flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-white/80" />
-              <span className="text-xs font-medium text-white/80">{property.address}</span>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                transition={TAP_SPRING}
-                type="button"
-                onClick={copyAddress}
-                aria-label="Copy address"
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-white/90"
-              >
-                <Copy className="h-3 w-3" />
-              </motion.button>
+      {/* Curved Container for Hero Image */}
+      <div className="px-4 pt-4">
+        <div className="relative h-80 w-full overflow-hidden rounded-[32px] bg-stone-800 shadow-sm border border-stone-200/50">
+          {coverImage ? (
+            <Image src={coverImage} alt={property.name} fill priority sizes="480px" className="object-cover" />
+          ) : (
+            <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-stone-700 via-stone-800 to-stone-900">
+              <ApartmentHeroScene className="h-full w-full" />
             </div>
           )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
+
+          <div className="absolute inset-x-4 top-5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 rounded-full border border-white/30 bg-black/30 py-1.5 pl-1.5 pr-1.5 backdrop-blur-md">
+              <div className="relative h-7 w-7 overflow-hidden rounded-full bg-white/20">
+                {property.host_avatar_url || property.logo_url ? (
+                  <Image
+                    src={(property.host_avatar_url ?? property.logo_url) as string}
+                    alt={property.host_name ?? 'Host'}
+                    fill
+                    sizes="28px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-white">
+                    {(property.host_name ?? property.name)?.charAt(0) ?? '•'}
+                  </div>
+                )}
+              </div>
+              <span className="pr-1 text-xs font-medium text-white/90">
+                {t('home.hosted_by', 'Hosted by')} {property.host_name ?? 'your host'}
+              </span>
+              {paperPlaneHref && (
+                <motion.a
+                  whileTap={{ scale: 0.9 }}
+                  transition={TAP_SPRING}
+                  href={paperPlaneHref}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
+                  aria-label="Email your host"
+                >
+                  <Send className="h-3.5 w-3.5" strokeWidth={2.2} />
+                </motion.a>
+              )}
+            </div>
+
+            <LanguageSwitcher variant="onImage" />
+          </div>
+
+          <div className="absolute inset-x-5 bottom-6">
+            <h1 className="text-3xl font-semibold leading-tight tracking-tight text-white">{property.name}</h1>
+            {property.address && (
+              <div className="mt-2 flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-white/80" />
+                <span className="text-xs font-medium text-white/80">{property.address}</span>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  transition={TAP_SPRING}
+                  type="button"
+                  onClick={copyAddress}
+                  aria-label="Copy address"
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-white/90"
+                >
+                  <Copy className="h-3 w-3" />
+                </motion.button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="px-5 pt-5">
+      <div className="px-5 pt-4">
         {property.address && (
           <motion.a
             whileTap={{ scale: 0.94 }}
@@ -2462,8 +2383,6 @@ function HeroHeader({
   );
 }
 
-/* ---------- Departure checklist (interactive) ------------------------ */
-
 function DepartureChecklistCard() {
   const t = useT();
   const [checked, setChecked] = useState<boolean[]>(() => DEFAULT_DEPARTURE_CHECKLIST.map(() => false));
@@ -2539,8 +2458,6 @@ function DepartureChecklistCard() {
   );
 }
 
-/* ---------- Save to Home Screen (PWA) banner -------------------------- */
-
 function AddToHomeScreenBanner() {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -2596,10 +2513,6 @@ function AddToHomeScreenBanner() {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Apartment Manual tab                                              */
-/* ------------------------------------------------------------------ */
 
 function ManualAccordionRow({
   item,
@@ -2878,49 +2791,6 @@ function ManualTab({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Explore tab                                                       */
-/* ------------------------------------------------------------------ */
-
-type ExploreSelection = { kind: 'places'; key: PlaceCategory } | { kind: 'info'; key: InfoCategoryKey };
-
-function InfoCategoryDetail({ tile, property, language }: { tile: InfoCategoryConfig; property: Property; language: string }) {
-  const t = useT();
-  const body = localize(tile.field(property), language) || t(`explore.info_${tile.key}_desc`, tile.fallback);
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="rounded-2xl border border-stone-200/60 bg-white p-4 shadow-sm shadow-stone-900/5">
-        <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700">{body}</p>
-      </div>
-      <div className="flex flex-col gap-2.5">
-        <motion.a
-          whileTap={{ scale: 0.97 }}
-          transition={TAP_SPRING}
-          href={nearbyMapsHref(tile.mapsQuery, property)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-3 text-sm font-semibold text-stone-900 shadow-sm transition-shadow hover:shadow-md"
-        >
-          <MapPin className="h-4 w-4" />
-          {t('explore.find_nearby', 'Find Nearby on Google Maps')}
-        </motion.a>
-        {tile.key === 'taxi' && property.taxi_phone && (
-          <motion.a
-            whileTap={{ scale: 0.97 }}
-            transition={TAP_SPRING}
-            href={telHref(property.taxi_phone)}
-            className="flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white shadow-md"
-            style={{ background: TURQUOISE }}
-          >
-            <PhoneCall className="h-4 w-4" />
-            {t('explore.call_radiotaxi', 'Call Radiotaxi')}
-          </motion.a>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function ExploreTab({
   places,
   property,
@@ -2942,7 +2812,6 @@ function ExploreTab({
 
   useEffect(() => {
     if (initialCategory) onDeepLinkConsumed();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const shelteredBeach = useMemo(() => places.find((p) => p.category === 'beaches' && p.wind_status === 'sheltered'), [places]);
@@ -3052,7 +2921,6 @@ function ExploreTab({
                 {/* Customized Rentals & Transfers Content */}
                 {selected.kind === 'places' && selected.key === 'rentals' && (
                   <div className="mb-4 flex flex-col gap-3.5">
-                    {/* Car Rentals Card */}
                     {(carRentalsBody || carRentalsUrl) && (
                       <div className="rounded-2xl border border-stone-200/60 bg-white p-4 shadow-sm shadow-stone-900/5">
                         <div className="flex items-center gap-2.5">
@@ -3081,7 +2949,6 @@ function ExploreTab({
                       </div>
                     )}
 
-                    {/* Transfers Card */}
                     {transfersBody && (
                       <div className="rounded-2xl border border-stone-200/60 bg-white p-4 shadow-sm shadow-stone-900/5">
                         <div className="flex items-center gap-2.5">
@@ -3112,10 +2979,6 @@ function ExploreTab({
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Support & Safety tab                                              */
-/* ------------------------------------------------------------------ */
 
 function SupportServiceCard({
   badge,
@@ -3308,10 +3171,6 @@ function SupportTab({ property, language }: { property: Property; language: stri
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Bottom tab bar                                                    */
-/* ------------------------------------------------------------------ */
-
 function BottomTabBar({ active, onChange, t }: { active: Tab; onChange: (tab: Tab) => void; t: (key: string, fallback: string) => string }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-md border-t border-stone-200/60 bg-white/95 backdrop-blur-xl">
@@ -3347,10 +3206,6 @@ function BottomTabBar({ active, onChange, t }: { active: Tab; onChange: (tab: Ta
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Main export                                                       */
-/* ------------------------------------------------------------------ */
 
 export default function DashboardGrid({ property, places, onOpenAIChat }: DashboardGridProps) {
   const { language } = useLanguage();
