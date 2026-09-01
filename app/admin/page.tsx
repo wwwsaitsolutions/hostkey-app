@@ -82,7 +82,7 @@ export interface PlaceItem {
 function emptyPlace(): PlaceItem {
   return {
     id: '',
-    category: 'food',
+    category: 'groceries',
     name: '',
     description: emptyMultilingual(),
     image_url: '',
@@ -143,7 +143,9 @@ interface PropertyFormState {
   bus_transport_info: MultilingualValue;
   taxi_station_info: MultilingualValue;
   taxi_phone: string;
-  rentals_booking_url: string;
+  car_rentals_info: MultilingualValue;
+  car_rentals_booking_url: string;
+  transfers_info: MultilingualValue;
   first_aid_location: MultilingualValue;
   pharmacy_phone: string;
   pharmacy_finder_url: string;
@@ -226,7 +228,9 @@ function emptyForm(): PropertyFormState {
     bus_transport_info: emptyMultilingual(),
     taxi_station_info: emptyMultilingual(),
     taxi_phone: '',
-    rentals_booking_url: '',
+    car_rentals_info: emptyMultilingual(),
+    car_rentals_booking_url: '',
+    transfers_info: emptyMultilingual(),
     first_aid_location: emptyMultilingual(),
     pharmacy_phone: '',
     pharmacy_finder_url: '',
@@ -352,7 +356,9 @@ function rowToForm(row: Record<string, unknown>): PropertyFormState {
     bus_transport_info: toMultilingual(row.bus_transport_info),
     taxi_station_info: toMultilingual(row.taxi_station_info),
     taxi_phone: str('taxi_phone'),
-    rentals_booking_url: str('rentals_booking_url'),
+    car_rentals_info: toMultilingual(row.car_rentals_info),
+    car_rentals_booking_url: str('car_rentals_booking_url') || str('rentals_booking_url'),
+    transfers_info: toMultilingual(row.transfers_info),
     first_aid_location: toMultilingual(row.first_aid_location),
     pharmacy_phone: str('pharmacy_phone'),
     pharmacy_finder_url: str('pharmacy_finder_url'),
@@ -413,7 +419,9 @@ function formToPayload(form: PropertyFormState): Record<string, unknown> {
     bus_transport_info: fromMultilingual(form.bus_transport_info),
     taxi_station_info: fromMultilingual(form.taxi_station_info),
     taxi_phone: fromText(form.taxi_phone),
-    rentals_booking_url: fromText(form.rentals_booking_url),
+    car_rentals_info: fromMultilingual(form.car_rentals_info),
+    car_rentals_booking_url: fromText(form.car_rentals_booking_url),
+    transfers_info: fromMultilingual(form.transfers_info),
     first_aid_location: fromMultilingual(form.first_aid_location),
     pharmacy_phone: fromText(form.pharmacy_phone),
     pharmacy_finder_url: fromText(form.pharmacy_finder_url),
@@ -458,7 +466,6 @@ function TextField({
   );
 }
 
-/** Bilingual / Multilingual Field with One-Click Translate */
 function MultilingualField({
   label,
   value,
@@ -690,7 +697,7 @@ export default function AdminPage() {
     setActiveSection('basic');
   }, []);
 
-  /** Auto-translate all Greek fields across the entire property */
+  /** Auto-translate all Greek fields */
   const handleAutoTranslateAll = async () => {
     setAutoTranslatingAll(true);
     pushToast('success', 'Translating all Greek content to English, French & German…');
@@ -717,6 +724,8 @@ export default function AdminPage() {
       'luggage_storage_info',
       'bus_transport_info',
       'taxi_station_info',
+      'car_rentals_info',
+      'transfers_info',
       'first_aid_location',
     ];
 
@@ -769,7 +778,7 @@ export default function AdminPage() {
       }
       await loadPropertyList();
     } catch (err: unknown) {
-      const errorObj = err as { message?: string; details?: string; hint?: string };
+      const errorObj = err as { message?: string; details?: string };
       const message = errorObj?.message || errorObj?.details || 'Error while saving.';
       pushToast('error', message);
       console.error('Supabase save error details:', err);
@@ -1064,13 +1073,27 @@ export default function AdminPage() {
         {/* 4. Local Mobility */}
         {activeSection === 'mobility' && (
           <div className="flex flex-col gap-5">
-            <SectionHeading title="Local Mobility & Transport" subtitle="Information cards for baggage, public buses, taxi stands and vehicle rentals." />
+            <SectionHeading title="Local Mobility & Transport" subtitle="Information cards for baggage, public buses, taxi stands, car rentals and private transfers." />
             <MultilingualField label="Luggage Storage Lockers Info" value={form.luggage_storage_info} onChange={set('luggage_storage_info')} />
             <MultilingualField label="Public Bus / KTEL Timetables & Info" value={form.bus_transport_info} onChange={set('bus_transport_info')} />
-            <MultilingualField label="Taxi Ranks & Radio-Taxi Info" value={form.taxi_station_info} onChange={set('taxi_station_info')} />
+            
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField label="Taxi Phone" value={form.taxi_phone} onChange={set('taxi_phone')} placeholder="+30 28310 25000" type="tel" />
-              <TextField label="Car & Transfer Booking URL" value={form.rentals_booking_url} onChange={set('rentals_booking_url')} placeholder="https://…" type="url" />
+              <MultilingualField label="Taxi Ranks & Radio-Taxi Info" value={form.taxi_station_info} onChange={set('taxi_station_info')} />
+              <div className="flex flex-col justify-start">
+                <TextField label="Taxi Phone" value={form.taxi_phone} onChange={set('taxi_phone')} placeholder="+30 28310 25000" type="tel" />
+              </div>
+            </div>
+
+            {/* Separated Car Rentals & Transfers */}
+            <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
+              <span className="text-sm font-bold text-stone-900">🚗 Car Rentals</span>
+              <MultilingualField label="Car Rentals Instructions & Recommendations" value={form.car_rentals_info} onChange={set('car_rentals_info')} />
+              <TextField label="Car Rentals Booking URL" value={form.car_rentals_booking_url} onChange={set('car_rentals_booking_url')} placeholder="https://rentalcars-example.com/…" type="url" />
+            </div>
+
+            <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
+              <span className="text-sm font-bold text-stone-900">🚐 Airport & Port Transfers</span>
+              <MultilingualField label="Transfers Instructions (Directions, pick-up points, host arrangement)" value={form.transfers_info} onChange={set('transfers_info')} />
             </div>
           </div>
         )}
@@ -1268,7 +1291,7 @@ export default function AdminPage() {
                 label="Place Name"
                 value={editingPlace.name}
                 onChange={(val) => setEditingPlace({ ...editingPlace, name: val })}
-                placeholder="e.g. Taverna Othonas"
+                placeholder="e.g. Papadakis Super Market"
               />
 
               <MultilingualField
@@ -1305,7 +1328,7 @@ export default function AdminPage() {
                 label="Address / Location on Google Maps"
                 value={editingPlace.address}
                 onChange={(val) => setEditingPlace({ ...editingPlace, address: val })}
-                placeholder="Petichaki Square 10, Rethymno"
+                placeholder="Dimokratias 17, Rethymno"
               />
 
               {editingPlace.category === 'beaches' && (
