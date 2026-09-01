@@ -74,14 +74,13 @@ export type AppLanguage = 'en' | 'el' | 'fr' | 'de';
  * `{ en: '...', el: '...', fr: '...' }`, sourced straight from Supabase. */
 export type LocalizedText = string | Partial<Record<string, string>> | null | undefined;
 
-/** Resolves a LocalizedText value strictly for the active language — no
- * silent English fallback baked in. */
+/** Resolves a LocalizedText value strictly for the active language with safe fallbacks */
 function localize(field: LocalizedText, language: string): string {
   if (field == null) return '';
   if (typeof field === 'object' && !Array.isArray(field)) {
-    return field[language] || '';
+    return field[language] || field['en'] || field['el'] || '';
   }
-  return language === 'en' ? String(field) : '';
+  return String(field);
 }
 
 /** UI-chrome translation hook — wraps `useLanguage()`'s `t(key)` with a safe fallback. */
@@ -187,6 +186,9 @@ export interface Property {
   taxi_station_info?: LocalizedText;
   taxi_phone?: string | null;
   rentals_booking_url?: string | null;
+  car_rentals_info?: LocalizedText;
+  car_rentals_booking_url?: string | null;
+  transfers_info?: LocalizedText;
 
   // --- Support & safety ---
   first_aid_location?: LocalizedText;
@@ -2955,6 +2957,10 @@ function ExploreTab({
     return EXPLORE_TILES.find((t) => t.kind === selected.kind && t.key === selected.key) ?? null;
   }, [selected]);
 
+  const carRentalsBody = localize(property.car_rentals_info, language);
+  const transfersBody = localize(property.transfers_info, language);
+  const carRentalsUrl = property.car_rentals_booking_url || property.rentals_booking_url;
+
   return (
     <div className="px-5 pb-4 pt-6">
       <AnimatePresence mode="wait" custom={direction} initial={false}>
@@ -3043,23 +3049,55 @@ function ExploreTab({
               <>
                 {selected.kind === 'places' && selected.key === 'beaches' && <LiveWindStrip />}
 
-                {selected.kind === 'places' && selected.key === 'rentals' && property.rentals_booking_url && (
-                  <motion.a
-                    whileTap={{ scale: 0.97 }}
-                    transition={TAP_SPRING}
-                    href={property.rentals_booking_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mb-3 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white shadow-md"
-                    style={{ background: `linear-gradient(135deg, #5E5CE6, #3634A3)` }}
-                  >
-                    <Car className="h-4 w-4" />
-                    {t('explore.book_transfer', 'Book a Car, Moto or Airport Transfer')}
-                  </motion.a>
+                {/* Customized Rentals & Transfers Content */}
+                {selected.kind === 'places' && selected.key === 'rentals' && (
+                  <div className="mb-4 flex flex-col gap-3.5">
+                    {/* Car Rentals Card */}
+                    {(carRentalsBody || carRentalsUrl) && (
+                      <div className="rounded-2xl border border-stone-200/60 bg-white p-4 shadow-sm shadow-stone-900/5">
+                        <div className="flex items-center gap-2.5">
+                          <IconSquircle icon={Car} tone={{ gradient: 'from-[#5E5CE6] to-[#3634A3]', shadow: 'shadow-[#5E5CE6]/25' }} size={36} />
+                          <h3 className="text-sm font-bold text-stone-900">🚗 Car Rentals</h3>
+                        </div>
+                        {carRentalsBody && (
+                          <p className="mt-2.5 whitespace-pre-line text-sm leading-relaxed text-stone-600">
+                            {carRentalsBody}
+                          </p>
+                        )}
+                        {carRentalsUrl && (
+                          <motion.a
+                            whileTap={{ scale: 0.97 }}
+                            transition={TAP_SPRING}
+                            href={carRentalsUrl.startsWith('http') ? carRentalsUrl : `https://${carRentalsUrl}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3.5 flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold uppercase tracking-wider text-white shadow-md"
+                            style={{ background: 'linear-gradient(135deg, #5E5CE6, #3634A3)' }}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Book Car Rental
+                          </motion.a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Transfers Card */}
+                    {transfersBody && (
+                      <div className="rounded-2xl border border-stone-200/60 bg-white p-4 shadow-sm shadow-stone-900/5">
+                        <div className="flex items-center gap-2.5">
+                          <IconSquircle icon={Navigation} tone={{ gradient: 'from-[#00B4D8] to-[#0077B6]', shadow: 'shadow-[#0077B6]/25' }} size={36} />
+                          <h3 className="text-sm font-bold text-stone-900">🚐 Airport & Port Transfers</h3>
+                        </div>
+                        <p className="mt-2.5 whitespace-pre-line text-sm leading-relaxed text-stone-600">
+                          {transfersBody}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <motion.div variants={listStagger} initial="hidden" animate="show" className="flex flex-col gap-3">
-                  {filtered.length === 0 && (
+                  {filtered.length === 0 && selected.key !== 'rentals' && (
                     <p className="py-10 text-center text-sm text-stone-400">{t('explore.empty', 'No places added for this category yet.')}</p>
                   )}
                   {filtered.map((place) => (
