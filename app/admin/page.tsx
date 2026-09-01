@@ -26,10 +26,17 @@ import {
   Lock,
   ArrowRight,
   LogOut,
+  Crown,
+  Check,
+  ShieldCheck,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'hostkey2026';
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                             */
+/* ------------------------------------------------------------------ */
 
 interface MultilingualValue {
   el: string;
@@ -173,6 +180,10 @@ const SECTIONS: { key: SectionKey; label: string; icon: typeof HomeIcon }[] = [
 
 const FIELD_CLASS =
   'w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-stone-900 shadow-sm outline-none transition-colors placeholder:text-stone-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20';
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                           */
+/* ------------------------------------------------------------------ */
 
 function emptyForm(): PropertyFormState {
   return {
@@ -420,6 +431,10 @@ function formToPayload(form: PropertyFormState): Record<string, unknown> {
     ai_custom_instructions: fromText(form.ai_custom_instructions),
   };
 }
+
+/* ------------------------------------------------------------------ */
+/*  Form Controls & File Upload Component                             */
+/* ------------------------------------------------------------------ */
 
 function FieldLabel({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
@@ -685,6 +700,10 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Main Admin Component with Pro Feature Modals                      */
+/* ------------------------------------------------------------------ */
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
@@ -699,6 +718,8 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [autoTranslatingAll, setAutoTranslatingAll] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [agreedTerms, setAgreedTerms] = useState<boolean>(true);
+  const [showProModal, setShowProModal] = useState<string | null>(null);
 
   const [places, setPlaces] = useState<PlaceItem[]>([]);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
@@ -874,6 +895,11 @@ export default function AdminPage() {
       return;
     }
 
+    if (!agreedTerms && !form.id) {
+      pushToast('error', 'Παρακαλώ αποδεχτείτε τους όρους χρήσης για να συνεχίσετε.');
+      return;
+    }
+
     setSaving(true);
     const payload = formToPayload(form);
 
@@ -897,7 +923,7 @@ export default function AdminPage() {
     } finally {
       setSaving(false);
     }
-  }, [form, loadPropertyList, pushToast]);
+  }, [form, agreedTerms, loadPropertyList, pushToast]);
 
   const handleSavePlace = useCallback(async () => {
     if (!editingPlace) return;
@@ -969,6 +995,9 @@ export default function AdminPage() {
 
   if (!authChecked) return null;
 
+  /* ------------------------------------------------------------------ */
+  /*  Security Login Screen                                             */
+  /* ------------------------------------------------------------------ */
   if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F4EC] p-6 text-stone-900">
@@ -1014,6 +1043,9 @@ export default function AdminPage() {
     );
   }
 
+  /* ------------------------------------------------------------------ */
+  /*  Admin Dashboard                                                   */
+  /* ------------------------------------------------------------------ */
   return (
     <div className="min-h-screen bg-[#F7F4EC] pb-28 text-stone-900">
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -1183,6 +1215,22 @@ export default function AdminPage() {
                 <TextField label="Host Email" value={form.host_email} onChange={set('host_email')} placeholder="host@example.com" type="email" />
               </div>
             </div>
+
+            {!form.id && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={agreedTerms}
+                    onChange={(e) => setAgreedTerms(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="text-xs leading-relaxed text-emerald-950">
+                    Αποδέχομαι τους <strong>Όρους Χρήσης</strong> και την παροχή του δωρεάν ψηφιακού οδηγού με τις προεπιλεγμένες υπηρεσίες της πλατφόρμας Hostkey.
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
         )}
 
@@ -1251,7 +1299,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 4. Local Mobility */}
+        {/* 4. Local Mobility with Pro Upsell */}
         {activeSection === 'mobility' && (
           <div className="flex flex-col gap-5">
             <SectionHeading title="Local Mobility & Transport" subtitle="Information cards for baggage, public buses, taxi stands, car rentals and private transfers." />
@@ -1265,14 +1313,29 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* Car Rentals Pro Box */}
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
-              <span className="text-sm font-bold text-stone-900">🚗 Car Rentals</span>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-stone-900">🚗 Car Rentals</span>
+                <button
+                  type="button"
+                  onClick={() => setShowProModal('Car Rentals & Affiliate Monetization')}
+                  className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-1 text-[11px] font-bold text-amber-800 hover:bg-amber-100"
+                >
+                  <Crown className="h-3 w-3 text-amber-600" />
+                  <span>Custom Affiliate (Pro)</span>
+                </button>
+              </div>
               <MultilingualField label="Car Rentals Instructions & Recommendations" value={form.car_rentals_info} onChange={set('car_rentals_info')} />
               <TextField label="Car Rentals Booking URL" value={form.car_rentals_booking_url} onChange={set('car_rentals_booking_url')} placeholder="https://sevenrental.gr" type="url" />
             </div>
 
+            {/* Airport Transfers Box */}
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
-              <span className="text-sm font-bold text-stone-900">🚐 Airport & Port Transfers</span>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-stone-900">🚐 Airport & Port Transfers</span>
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">Included Free</span>
+              </div>
               <MultilingualField label="Transfers Instructions (Directions, pick-up points, host arrangement)" value={form.transfers_info} onChange={set('transfers_info')} />
             </div>
           </div>
@@ -1308,7 +1371,6 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {/* Category Filter Pills */}
             <div className="flex gap-2 overflow-x-auto pb-2">
               <button
                 type="button"
@@ -1336,7 +1398,6 @@ export default function AdminPage() {
               })}
             </div>
 
-            {/* Places Grid */}
             {loadingPlaces ? (
               <div className="flex items-center justify-center py-12 text-stone-400">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -1396,13 +1457,24 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 7. AI Concierge Knowledge */}
+        {/* 7. AI Concierge Knowledge with Pro Upsell */}
         {activeSection === 'ai' && (
           <div className="flex flex-col gap-5">
-            <SectionHeading
-              title="AI Concierge Knowledge Base"
-              subtitle="Custom instructions and facts specific to this apartment. The AI Concierge chat will use this context to answer guests' questions."
-            />
+            <div className="flex items-center justify-between">
+              <SectionHeading
+                title="AI Concierge Knowledge Base"
+                subtitle="Custom instructions and facts specific to this apartment. The AI Concierge chat will use this context to answer guests' questions."
+              />
+              <button
+                type="button"
+                onClick={() => setShowProModal('24/7 AI Guest Concierge')}
+                className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-95"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>AI Pro Add-on</span>
+              </button>
+            </div>
+
             <div className="rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm">
               <FieldLabel hint="Special quirks, secret tips, exact trash location, heating instructions...">
                 Apartment AI Context & Knowledge
@@ -1436,6 +1508,52 @@ export default function AdminPage() {
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {saving ? 'Saving…' : form.id ? 'Save Changes' : 'Create Property'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pro Upgrade Modal */}
+      {showProModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                <Crown className="h-5 w-5" />
+              </div>
+              <button type="button" onClick={() => setShowProModal(null)} className="text-stone-400 hover:text-stone-700">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <h3 className="mt-4 text-lg font-bold text-stone-900">{showProModal}</h3>
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">
+              Ξεκλειδώστε την πλήρη αυτονομία στο κατάλυμά σας. Προσθέστε τις δικές σας συμφωνίες ή ενεργοποιήστε τον έξυπνο AI βοηθό που απαντά στους επισκέπτες 24/7.
+            </p>
+
+            <div className="mt-4 flex flex-col gap-2 rounded-2xl bg-stone-50 p-3.5 text-xs text-stone-700">
+              <span className="flex items-center gap-2 font-medium"><Check className="h-3.5 w-3.5 text-emerald-600" /> Δικά σας custom links & τηλέφωνα</span>
+              <span className="flex items-center gap-2 font-medium"><Check className="h-3.5 w-3.5 text-emerald-600" /> AI Concierge 24/7 Chatbot</span>
+              <span className="flex items-center gap-2 font-medium"><Check className="h-3.5 w-3.5 text-emerald-600" /> Άμεση ενεργοποίηση χωρίς συμβόλαιο</span>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowProModal(null)}
+                className="flex-1 rounded-xl border border-stone-200 py-2.5 text-xs font-bold text-stone-700 hover:bg-stone-50"
+              >
+                Κλείσιμο
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  pushToast('success', 'Το αίτημά σας καταγράφηκε! Θα επικοινωνήσουμε μαζί σας.');
+                  setShowProModal(null);
+                }}
+                className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700"
+              >
+                Ενεργοποίηση Pro
+              </button>
+            </div>
           </div>
         </div>
       )}

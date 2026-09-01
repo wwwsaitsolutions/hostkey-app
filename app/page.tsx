@@ -9,6 +9,9 @@ import {
   ArrowRight, 
   Globe,
   Lock,
+  CheckCircle2,
+  Bot,
+  Percent,
 } from 'lucide-react';
 
 /* Custom Logo Icon: House + Smart Key */
@@ -32,8 +35,7 @@ export default function LandingPage() {
       {/* Navigation Header */}
       <header className="sticky top-0 z-30 border-b border-stone-200/60 bg-[#F7F4EC]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          
-          {/* Logo with Key & House Icon */}
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-95">
             <HostkeyLogoIcon />
             <div className="flex flex-col">
@@ -42,30 +44,32 @@ export default function LandingPage() {
                   Host<span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">key</span>
                 </span>
                 <span className="rounded-md bg-emerald-100/80 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-800">
-                  PRO
+                  FREE
                 </span>
               </div>
               <span className="text-[10px] font-medium tracking-wide text-stone-400 -mt-1">Digital Guest Guidebook</span>
             </div>
           </Link>
 
-          {/* Single Admin Portal Entry */}
-          <Link
-            href="/admin"
-            className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 py-2 text-xs font-semibold text-stone-700 shadow-sm transition-colors hover:bg-stone-50"
-          >
-            <Lock className="h-3.5 w-3.5 text-stone-400" />
-            <span>Admin Portal</span>
-          </Link>
+          {/* Top Admin Action */}
+          <div className="flex items-center gap-2.5">
+            <Link
+              href="/admin"
+              className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 py-2 text-xs font-semibold text-stone-700 shadow-sm transition-colors hover:bg-stone-50"
+            >
+              <Lock className="h-3.5 w-3.5 text-stone-400" />
+              <span>Σύνδεση Οικοδεσπότη</span>
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <main className="mx-auto max-w-5xl px-6 pt-12 pb-20">
+      <main className="mx-auto max-w-5xl px-6 pt-12 pb-24">
         <div className="flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-800">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-50 px-4 py-1.5 text-xs font-bold text-emerald-800">
             <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-            Next-Gen Digital Guest Experience
+            100% Δωρεάν για όλους τους Οικοδεσπότες
           </div>
 
           <h1 className="mt-6 max-w-3xl text-4xl font-extrabold tracking-tight text-stone-900 sm:text-5xl sm:leading-[1.15]">
@@ -73,18 +77,30 @@ export default function LandingPage() {
           </h1>
 
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-stone-600 sm:text-lg">
-            Αντικαταστήστε τα παλιά έντυπα εγχειρίδια με μια διαδραστική, πολυγλωσσική web εφαρμογή. Δώστε στους επισκέπτες σας άμεση πρόσβαση σε Wi-Fi, check-in οδηγίες, ψηφιακό manual και τοπικές προτάσεις.
+            Αναβαθμίστε την εμπειρία των επισκεπτών σας με μια σύγχρονη, διαδραστική εφαρμογή στο κινητό τους. Οδηγίες check-in, Wi-Fi, ψηφιακό manual και τοπικές προτάσεις — <strong className="text-stone-900 font-semibold">εντελώς δωρεάν, χωρίς κρυφές χρεώσεις.</strong>
           </p>
 
-          {/* Single Focused Call-to-Action */}
-          <div className="mt-9 flex items-center justify-center">
+          {/* Action CTAs */}
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href="/demo"
-              className="flex items-center gap-2.5 rounded-2xl bg-emerald-600 px-8 py-4 text-sm font-bold text-white shadow-xl shadow-emerald-600/25 transition-all hover:scale-[1.02] hover:bg-emerald-700 active:scale-[0.98]"
+              href="/admin"
+              className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-8 py-4 text-sm font-bold text-white shadow-xl shadow-emerald-600/25 transition-all hover:scale-[1.02] hover:bg-emerald-700 active:scale-[0.98]"
             >
-              <span>Δείτε το Live Demo</span>
+              <span>Δημιουργήστε Δωρεάν Οδηγό</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
+            <Link
+              href="/demo"
+              className="flex items-center gap-2 rounded-2xl border border-stone-300 bg-white px-7 py-4 text-sm font-bold text-stone-800 shadow-sm transition-all hover:bg-stone-50"
+            >
+              <span>Δείτε το Live Demo</span>
+            </Link>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-stone-500 font-medium">
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> Χωρίς πιστωτική κάρτα</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> Έτοιμο σε 3 λεπτά</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> Εγκατάσταση PWA στο κινητό</span>
           </div>
         </div>
 
@@ -126,7 +142,7 @@ export default function LandingPage() {
             </div>
             <h3 className="mt-4 text-base font-bold text-stone-900">Τοπικός Οδηγός & Πρόγνωση Ανέμου</h3>
             <p className="mt-2 text-sm leading-relaxed text-stone-500">
-              Προτείνετε τις καλύτερες παραλίες (με live ένδειξη προστασίας από τον άνεμο), σούπερ μάρκετ, ταβέρνες και ενοικιάσεις αυτοκινήτων.
+              Προτείνετε τις καλύτερες παραλίες (με live ένδειξη προστασίας από τον άνεμο), σούπερ μάρκετ, ταβέρνες και σημεία ενδιαφέροντος.
             </p>
           </div>
 
@@ -151,9 +167,26 @@ export default function LandingPage() {
           </div>
         </div>
 
+        {/* Free Forever Banner */}
+        <div className="mt-20 rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/50 p-8 sm:p-12 text-center shadow-sm">
+          <h2 className="text-2xl font-black text-stone-900 sm:text-3xl">Όλα όσα χρειάζεστε, εντελώς Δωρεάν.</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-stone-600">
+            Δημιουργήστε τον ψηφιακό οδηγό του καταλύματός σας σήμερα. Μοιραστείτε το link ή το QR code με τους επισκέπτες σας και προσφέρετε μια premium εμπειρία διαμονής.
+          </p>
+          <div className="mt-8 flex justify-center">
+            <Link
+              href="/admin"
+              className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-8 py-4 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
+            >
+              <span>Ξεκινήστε Δωρεάν Τώρα</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+
         {/* Footer */}
         <footer className="mt-24 border-t border-stone-200/60 pt-8 text-center text-xs text-stone-500">
-          <p>© {new Date().getFullYear()} Hostkey. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Hostkey. All rights reserved. Powered by Hostkey.</p>
         </footer>
       </main>
     </div>
