@@ -626,7 +626,7 @@ function MultilingualField({
               rows={3}
               value={value.el}
               onChange={(e) => onChange({ ...value, el: e.target.value })}
-              placeholder="Πληκτρολόγησε στα ελληνικά…"
+              placeholder="Πληκτρολογήστε στα ελληνικά…"
               className={baseClass + ' border-emerald-300'}
             />
           ) : (
@@ -634,7 +634,7 @@ function MultilingualField({
               type="text"
               value={value.el}
               onChange={(e) => onChange({ ...value, el: e.target.value })}
-              placeholder="Πληκτρολόγησε στα ελληνικά…"
+              placeholder="Πληκτρολογήστε στα ελληνικά…"
               className={baseClass + ' border-emerald-300'}
             />
           )}
@@ -755,7 +755,6 @@ export default function AdminPage() {
       if (!session) {
         router.replace('/login');
       } else {
-        // Καθαρίζουμε τυχόν παλιό master flag αν ο χρήστης συνδέθηκε κανονικά με email
         if (typeof window !== 'undefined') {
           localStorage.removeItem('hostkey_is_master');
         }
@@ -819,7 +818,6 @@ export default function AdminPage() {
     if (list.length > 0) {
       handleSelectProperty(list[0].id);
     } else {
-      // Αν ο νέος χρήστης δεν έχει κανένα κατάλυμα, καθαρίζουμε τη φόρμα
       setForm(emptyForm());
     }
   }, [user?.id, pushToast, handleSelectProperty]);
@@ -1145,7 +1143,7 @@ export default function AdminPage() {
               subtitle="Identification, address, cover images, Wi-Fi and direct host channels."
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField label="Property Name" value={form.name} onChange={set('name')} placeholder="Central Luxury Apartment" />
+              <TextField label="Property Name" value={form.name} onChange={set('name')} placeholder="e.g. Seaside Luxury Villa" />
               <div className="flex flex-col gap-1.5">
                 <FieldLabel hint="URL identifier">Slug</FieldLabel>
                 <div className="flex gap-2">
@@ -1153,7 +1151,7 @@ export default function AdminPage() {
                     type="text"
                     value={form.slug}
                     onChange={(e) => set('slug')(slugify(e.target.value))}
-                    placeholder="central-luxury-apartment"
+                    placeholder="e.g. seaside-luxury-villa"
                     className={FIELD_CLASS}
                   />
                   <button
@@ -1168,7 +1166,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <TextField label="Address" value={form.address} onChange={set('address')} placeholder="Moatsou 44, Rethymno" />
+            <TextField label="Address" value={form.address} onChange={set('address')} placeholder="e.g. Main Street 15, City Center" />
 
             <FileUploadField
               label="Apartment Cover Image"
@@ -1179,23 +1177,23 @@ export default function AdminPage() {
             />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <TextField label="Smart Lock / Keysafe Code" value={form.keysafe_code} onChange={set('keysafe_code')} placeholder="1987" />
-              <TextField label="Wi-Fi SSID" value={form.wifi_ssid} onChange={set('wifi_ssid')} placeholder="Huawei" />
-              <TextField label="Wi-Fi Password" value={form.wifi_password} onChange={set('wifi_password')} placeholder="••••••••" />
+              <TextField label="Smart Lock / Keysafe Code" value={form.keysafe_code} onChange={set('keysafe_code')} placeholder="e.g. 1234" />
+              <TextField label="Wi-Fi SSID" value={form.wifi_ssid} onChange={set('wifi_ssid')} placeholder="e.g. Villa_Guest_WiFi" />
+              <TextField label="Wi-Fi Password" value={form.wifi_password} onChange={set('wifi_password')} placeholder="e.g. welcome2026" />
             </div>
 
             <div className="mt-2 rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm shadow-stone-900/5">
               <p className="mb-3 text-sm font-bold text-stone-900">Direct Host Support & Contact Details</p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <TextField label="Host Display Name" value={form.host_name} onChange={set('host_name')} placeholder="Manolis" />
+                <TextField label="Host Display Name" value={form.host_name} onChange={set('host_name')} placeholder="e.g. Maria" />
                 <FileUploadField
                   label="Host Profile Avatar"
                   value={form.host_avatar_url}
                   onChange={set('host_avatar_url')}
                   onToast={pushToast}
                 />
-                <TextField label="Host Phone (Call)" value={form.host_phone} onChange={set('host_phone')} placeholder="+30 697 000 0000" type="tel" />
-                <TextField label="Host WhatsApp Number" value={form.whatsapp_number} onChange={set('whatsapp_number')} placeholder="+30 697 000 0000" type="tel" />
+                <TextField label="Host Phone (Call)" value={form.host_phone} onChange={set('host_phone')} placeholder="+30 690 000 0000" type="tel" />
+                <TextField label="Host WhatsApp Number" value={form.whatsapp_number} onChange={set('whatsapp_number')} placeholder="+30 690 000 0000" type="tel" />
                 <TextField label="Host Email" value={form.host_email} onChange={set('host_email')} placeholder="host@example.com" type="email" />
               </div>
             </div>
@@ -1243,9 +1241,7 @@ export default function AdminPage() {
                   rows={4}
                   value={form.checkin_steps_text}
                   onChange={(e) => set('checkin_steps_text')(e.target.value)}
-                  placeholder="Arrive anytime after 15:00...
-Open lockbox with code...
-Keys are inside..."
+                  placeholder="e.g.&#10;Arrive anytime after 15:00...&#10;Open lockbox with code...&#10;Keys are inside..."
                   className={FIELD_CLASS}
                 />
               </div>
@@ -1256,9 +1252,7 @@ Keys are inside..."
                   rows={4}
                   value={form.checkout_steps_text}
                   onChange={(e) => set('checkout_steps_text')(e.target.value)}
-                  placeholder="Checkout is by 11:00...
-Turn off AC & lights...
-Leave keys in lockbox..."
+                  placeholder="e.g.&#10;Checkout is by 11:00...&#10;Turn off AC & lights...&#10;Leave keys in lockbox..."
                   className={FIELD_CLASS}
                 />
               </div>
@@ -1297,7 +1291,7 @@ Leave keys in lockbox..."
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <MultilingualField label="Taxi Ranks & Radio-Taxi Info" value={form.taxi_station_info} onChange={set('taxi_station_info')} />
               <div className="flex flex-col justify-start">
-                <TextField label="Taxi Phone" value={form.taxi_phone} onChange={set('taxi_phone')} placeholder="+30 28310 25000" type="tel" />
+                <TextField label="Taxi Phone" value={form.taxi_phone} onChange={set('taxi_phone')} placeholder="+30 210 000 0000" type="tel" />
               </div>
             </div>
 
@@ -1314,7 +1308,7 @@ Leave keys in lockbox..."
                 </button>
               </div>
               <MultilingualField label="Car Rentals Instructions & Recommendations" value={form.car_rentals_info} onChange={set('car_rentals_info')} />
-              <TextField label="Car Rentals Booking URL" value={form.car_rentals_booking_url} onChange={set('car_rentals_booking_url')} placeholder="https://sevenrental.gr" type="url" />
+              <TextField label="Car Rentals Booking URL" value={form.car_rentals_booking_url} onChange={set('car_rentals_booking_url')} placeholder="https://example-rentals.com" type="url" />
             </div>
 
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
@@ -1333,7 +1327,7 @@ Leave keys in lockbox..."
             <SectionHeading title="Emergency, Pharmacy & First Aid" subtitle="Safety information cards shown on the Support tab." />
             <MultilingualField label="First Aid Kit Exact Location" value={form.first_aid_location} onChange={set('first_aid_location')} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField label="Duty Pharmacy Phone" value={form.pharmacy_phone} onChange={set('pharmacy_phone')} placeholder="+30 28310 12345" type="tel" />
+              <TextField label="Duty Pharmacy Phone" value={form.pharmacy_phone} onChange={set('pharmacy_phone')} placeholder="+30 210 000 0000" type="tel" />
               <TextField label="24/7 Pharmacy Finder URL" value={form.pharmacy_finder_url} onChange={set('pharmacy_finder_url')} placeholder="https://…" type="url" />
             </div>
           </div>
@@ -1469,11 +1463,7 @@ Leave keys in lockbox..."
                 rows={10}
                 value={form.ai_custom_instructions}
                 onChange={(e) => set('ai_custom_instructions')(e.target.value)}
-                placeholder="Example:
-- The water heater booster switch is on the left of the bathroom door.
-- Recycling bins are collected every Tuesday morning.
-- The best nearby bakery is 'Veneto Bakery' 80m down the alley.
-- Late night check-in: keysafe code is illuminated with a torch."
+                placeholder="Example:&#10;- The water heater switch is located in the hallway cabinet.&#10;- Recycling bins are collected every Tuesday morning.&#10;- The best nearby bakery is 100m down the street.&#10;- Late night check-in: lockbox is lit by an outdoor motion sensor."
                 className={FIELD_CLASS + ' mt-2'}
               />
             </div>
@@ -1579,7 +1569,7 @@ Leave keys in lockbox..."
                 label="Place Name"
                 value={editingPlace.name}
                 onChange={(val) => setEditingPlace({ ...editingPlace, name: val })}
-                placeholder="e.g. Papadakis Super Market"
+                placeholder="e.g. Local Bakery & Cafe"
               />
 
               <MultilingualField
@@ -1607,7 +1597,7 @@ Leave keys in lockbox..."
                   label="Phone Number"
                   value={editingPlace.phone}
                   onChange={(val) => setEditingPlace({ ...editingPlace, phone: val })}
-                  placeholder="+30 28310 12345"
+                  placeholder="+30 210 000 0000"
                   type="tel"
                 />
               </div>
@@ -1616,7 +1606,7 @@ Leave keys in lockbox..."
                 label="Address / Location on Google Maps"
                 value={editingPlace.address}
                 onChange={(val) => setEditingPlace({ ...editingPlace, address: val })}
-                placeholder="Dimokratias 17, Rethymno"
+                placeholder="e.g. Main Street 24, City Center"
               />
 
               {editingPlace.category === 'beaches' && (
