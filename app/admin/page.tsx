@@ -32,7 +32,7 @@ import {
 import { supabase } from '@/lib/supabase';
 
 /* ------------------------------------------------------------------ */
-/*  Types                                                             */
+/* Types                                                             */
 /* ------------------------------------------------------------------ */
 
 interface MultilingualValue {
@@ -178,7 +178,7 @@ const FIELD_CLASS =
   'w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-stone-900 shadow-sm outline-none transition-colors placeholder:text-stone-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20';
 
 /* ------------------------------------------------------------------ */
-/*  Helpers                                                           */
+/* Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
 function emptyForm(): PropertyFormState {
@@ -435,7 +435,7 @@ function formToPayload(form: PropertyFormState, userId?: string | null): Record<
 }
 
 /* ------------------------------------------------------------------ */
-/*  Form Controls & File Upload Component                             */
+/* Form Controls & File Upload Component                             */
 /* ------------------------------------------------------------------ */
 
 function FieldLabel({ children, hint }: { children: ReactNode; hint?: string }) {
@@ -509,7 +509,7 @@ function FileUploadField({
     } catch (err: unknown) {
       const errObj = err as { message?: string };
       onToast('error', `Upload error: ${errObj?.message || 'Check storage bucket'}`);
-    } finally {
+    } fontally {
       setUploading(false);
     }
   };
@@ -703,7 +703,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main Admin Component with User Isolation                          */
+/* Main Admin Component with User Isolation                          */
 /* ------------------------------------------------------------------ */
 
 export default function AdminPage() {
@@ -740,9 +740,16 @@ export default function AdminPage() {
     setToasts((current) => current.filter((t) => t.id !== id));
   }, []);
 
-  // Έλεγχος Συνεδρίας Χρήστη (Supabase Auth)
+  // Έλεγχος Συνεδρίας Χρήστη (Master PIN + Supabase Auth)
   useEffect(() => {
     const checkUser = async () => {
+      const isMaster = typeof window !== 'undefined' ? localStorage.getItem('hostkey_is_master') : null;
+      if (isMaster === 'true') {
+        setUser({ email: 'Master Admin' });
+        setAuthChecking(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.replace('/login');
@@ -755,6 +762,10 @@ export default function AdminPage() {
   }, [router]);
 
   const handleLogout = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('hostkey_admin_auth');
+      localStorage.removeItem('hostkey_is_master');
+    }
     await supabase.auth.signOut();
     router.push('/login');
   };
@@ -1216,7 +1227,9 @@ export default function AdminPage() {
                   rows={4}
                   value={form.checkin_steps_text}
                   onChange={(e) => set('checkin_steps_text')(e.target.value)}
-                  placeholder="Arrive anytime after 15:00...&#10;Open lockbox with code...&#10;Keys are inside..."
+                  placeholder="Arrive anytime after 15:00...
+Open lockbox with code...
+Keys are inside..."
                   className={FIELD_CLASS}
                 />
               </div>
@@ -1227,7 +1240,9 @@ export default function AdminPage() {
                   rows={4}
                   value={form.checkout_steps_text}
                   onChange={(e) => set('checkout_steps_text')(e.target.value)}
-                  placeholder="Checkout is by 11:00...&#10;Turn off AC & lights...&#10;Leave keys in lockbox..."
+                  placeholder="Checkout is by 11:00...
+Turn off AC & lights...
+Leave keys in lockbox..."
                   className={FIELD_CLASS}
                 />
               </div>
@@ -1438,7 +1453,11 @@ export default function AdminPage() {
                 rows={10}
                 value={form.ai_custom_instructions}
                 onChange={(e) => set('ai_custom_instructions')(e.target.value)}
-                placeholder="Example:&#10;- The water heater booster switch is on the left of the bathroom door.&#10;- Recycling bins are collected every Tuesday morning.&#10;- The best nearby bakery is 'Veneto Bakery' 80m down the alley.&#10;- Late night check-in: keysafe code is illuminated with a torch."
+                placeholder="Example:
+- The water heater booster switch is on the left of the bathroom door.
+- Recycling bins are collected every Tuesday morning.
+- The best nearby bakery is 'Veneto Bakery' 80m down the alley.
+- Late night check-in: keysafe code is illuminated with a torch."
                 className={FIELD_CLASS + ' mt-2'}
               />
             </div>

@@ -4,18 +4,37 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Sparkles, Mail, KeyRound, Loader2, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Sparkles, Mail, KeyRound, Loader2, ArrowRight, CheckCircle2, AlertCircle, ShieldCheck, Lock } from 'lucide-react';
+
+const MASTER_ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'hostkey2026';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [loginMode, setLoginMode] = useState<'host_email' | 'master_pin'>('host_email');
   const [email, setEmail] = useState('');
   const [otpToken, setOtpToken] = useState('');
+  const [pinInput, setPinInput] = useState('');
   const [step, setStep] = useState<'email' | 'otp'>('email');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // 1. Αποστολή OTP κωδικού στο Email
+  // 1. Master Admin Direct PIN Login (Για εσένα)
+  const handleMasterPinLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    if (pinInput.trim() === MASTER_ADMIN_PIN) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('hostkey_admin_auth', 'true');
+        localStorage.setItem('hostkey_is_master', 'true');
+      }
+      router.push('/admin');
+    } else {
+      setErrorMsg('Λανθασμένος κωδικός Master Admin. Δοκιμάστε ξανά.');
+    }
+  };
+
+  // 2. Host Email OTP Send (Για τους άλλους οικοδεσπότες)
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -29,7 +48,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        shouldCreateUser: true, // Αν δεν υπάρχει, δημιουργείται αυτόματα νέος λογαριασμός
+        shouldCreateUser: true,
       },
     });
     setLoading(false);
@@ -42,7 +61,7 @@ export default function LoginPage() {
     }
   };
 
-  // 2. Επαλήθευση του 6-ψήφιου κωδικού OTP
+  // 3. Host Verify OTP
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -58,6 +77,10 @@ export default function LoginPage() {
     if (error) {
       setErrorMsg('Ο κωδικός είναι λανθασμένος ή έχει λήξει. Δοκιμάστε ξανά.');
     } else {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('hostkey_admin_auth', 'true');
+        localStorage.removeItem('hostkey_is_master');
+      }
       router.push('/admin');
     }
   };
@@ -70,13 +93,48 @@ export default function LoginPage() {
             <Sparkles className="h-7 w-7" />
           </Link>
           <h1 className="mt-5 text-2xl font-bold text-stone-900">
-            {step === 'email' ? 'Σύνδεση Οικοδεσπότη' : 'Εισαγωγή Κωδικού'}
+            {loginMode === 'master_pin'
+              ? 'Master Admin Access'
+              : step === 'email'
+              ? 'Σύνδεση Οικοδεσπότη'
+              : 'Εισαγωγή Κωδικού Email'}
           </h1>
           <p className="mt-1.5 text-xs text-stone-500">
-            {step === 'email'
+            {loginMode === 'master_pin'
+              ? 'Εισάγετε το Master PIN για άμεση πλήρη πρόσβαση σε όλα τα καταλύματα.'
+              : step === 'email'
               ? 'Συμπληρώστε το email σας για να λάβετε τον κωδικό πρόσβασης.'
-              : `Πληκτρολογήστε τον κωδικό που στάλθηκε στο ${email}`}
+              : `Πληκτρολογήστε τον 6-ψήφιο κωδικό που στάλθηκε στο ${email}`}
           </p>
+        </div>
+
+        {/* Tab Switcher: Host Email vs Master PIN */}
+        <div className="mt-6 flex rounded-xl bg-stone-100 p-1">
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMode('host_email');
+              setErrorMsg('');
+            }}
+            className={`flex-1 rounded-lg py-2 text-xs font-bold transition-colors ${
+              loginMode === 'host_email' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            Οικοδεσπότης (Email)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMode('master_pin');
+              setErrorMsg('');
+            }}
+            className={`flex items-center justify-center gap-1.5 flex-1 rounded-lg py-2 text-xs font-bold transition-colors ${
+              loginMode === 'master_pin' ? 'bg-stone-900 text-white shadow-sm' : 'text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <Lock className="h-3 w-3" />
+            <span>Master Admin</span>
+          </button>
         </div>
 
         {errorMsg && (
@@ -93,10 +151,40 @@ export default function LoginPage() {
           </div>
         )}
 
-        {step === 'email' ? (
+        {/* MASTER ADMIN FORM (PIN LOGIN) */}
+        {loginMode === 'master_pin' && (
+          <form onSubmit={handleMasterPinLogin} className="mt-6 flex flex-col gap-4">
+            <div>
+              <label className="text-xs font-semibold uppercase text-stone-500">Master Password / PIN</label>
+              <div className="relative mt-1.5">
+                <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="password"
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  placeholder="••••••••"
+                  autoFocus
+                  required
+                  className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-3.5 text-sm tracking-widest text-stone-900 shadow-sm outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-stone-800"
+            >
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              <span>Άμεση Είσοδος Admin</span>
+            </button>
+          </form>
+        )}
+
+        {/* HOST EMAIL LOGIN FORM */}
+        {loginMode === 'host_email' && step === 'email' && (
           <form onSubmit={handleSendOtp} className="mt-6 flex flex-col gap-4">
             <div>
-              <label className="text-xs font-semibold uppercase text-stone-500">Email</label>
+              <label className="text-xs font-semibold uppercase text-stone-500">Email Οικοδεσπότη</label>
               <div className="relative mt-1.5">
                 <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                 <input
@@ -119,10 +207,13 @@ export default function LoginPage() {
               <span>{loading ? 'Αποστολή κωδικού…' : 'Συνέχεια με Email'}</span>
             </button>
           </form>
-        ) : (
+        )}
+
+        {/* HOST OTP VERIFICATION */}
+        {loginMode === 'host_email' && step === 'otp' && (
           <form onSubmit={handleVerifyOtp} className="mt-6 flex flex-col gap-4">
             <div>
-              <label className="text-xs font-semibold uppercase text-stone-500">6-ψήφιος Κωδικός</label>
+              <label className="text-xs font-semibold uppercase text-stone-500">6-ψήφιος Κωδικός Email</label>
               <div className="relative mt-1.5">
                 <KeyRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                 <input
