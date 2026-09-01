@@ -2,17 +2,18 @@ import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import DashboardGrid from '@/components/DashboardGrid';
 
-export const revalidate = 60; // Live ανανέωση cache ανά 60 δευτερόλεπτα
+// Απενεργοποίηση στατικού cache ώστε κάθε αλλαγή στο Admin να φαίνεται ΑΜΕΣΩΣ στο live
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
 export default async function PropertyPage({ params }: PageProps) {
-  // 1. Await για το params (συμβατότητα με Next.js 15+)
   const { slug } = await params;
 
-  // 2. Φόρτωση του συγκεκριμένου καταλύματος βάσει του slug
+  // 1. Φόρτωση του διαμερίσματος
   const { data: property, error: propError } = await supabase
     .from('properties')
     .select('*')
@@ -23,11 +24,11 @@ export default async function PropertyPage({ params }: PageProps) {
     notFound();
   }
 
-  // 3. Φόρτωση των προτάσεων (places) για το συγκεκριμένο κατάλυμα
+  // 2. Φόρτωση ΟΛΩΝ των προτάσεων (παραλίες, φαγητό, supermarkets, bars κλπ.)
   const { data: places } = await supabase
     .from('places')
     .select('*')
-    .or(`property_id.eq.${property.id},property_id.is.null`);
+    .order('name', { ascending: true });
 
   return (
     <main className="min-h-screen bg-[#F7F4EC]">
