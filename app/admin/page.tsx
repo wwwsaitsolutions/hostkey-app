@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
   AlertCircle,
   BookOpen,
@@ -18,8 +18,10 @@ import {
   Sparkles,
   Star,
   Trash2,
+  Upload,
   Wand2,
   X,
+  ImageIcon,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -97,7 +99,6 @@ function emptyPlace(): PlaceItem {
 interface PropertyFormState {
   id: string | null;
 
-  // Basic info & Host
   name: string;
   slug: string;
   address: string;
@@ -113,7 +114,6 @@ interface PropertyFormState {
   host_email: string;
   host_avatar_url: string;
 
-  // Arrival & Logistics
   building_access: MultilingualValue;
   elevator_info: MultilingualValue;
   parking_info: MultilingualValue;
@@ -122,7 +122,6 @@ interface PropertyFormState {
   checkin_steps_text: string;
   checkout_steps_text: string;
 
-  // House manual
   tap_water_info: MultilingualValue;
   plumbing_rules: MultilingualValue;
   sockets_appliances_info: MultilingualValue;
@@ -138,7 +137,6 @@ interface PropertyFormState {
   trash_maps_url: string;
   house_rules: MultilingualValue;
 
-  // Mobility & Safety
   luggage_storage_info: MultilingualValue;
   bus_transport_info: MultilingualValue;
   taxi_station_info: MultilingualValue;
@@ -150,7 +148,6 @@ interface PropertyFormState {
   pharmacy_phone: string;
   pharmacy_finder_url: string;
 
-  // AI Knowledge Base
   ai_custom_instructions: string;
 }
 
@@ -161,10 +158,6 @@ interface ToastItem {
   type: 'success' | 'error';
   message: string;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Static config                                                     */
-/* ------------------------------------------------------------------ */
 
 const SECTIONS: { key: SectionKey; label: string; icon: typeof HomeIcon }[] = [
   { key: 'basic', label: 'Basic & Host', icon: HomeIcon },
@@ -431,7 +424,7 @@ function formToPayload(form: PropertyFormState): Record<string, unknown> {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Form Controls                                                     */
+/*  Form Controls & File Upload Component                             */
 /* ------------------------------------------------------------------ */
 
 function FieldLabel({ children, hint }: { children: ReactNode; hint?: string }) {
@@ -463,6 +456,109 @@ function TextField({
       <FieldLabel hint={hint}>{label}</FieldLabel>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={FIELD_CLASS} />
     </label>
+  );
+}
+
+/** Direct File/Image Uploader using Supabase Storage */
+function FileUploadField({
+  label,
+  value,
+  onChange,
+  onToast,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (url: string) => void;
+  onToast: (type: 'success' | 'error', message: string) => void;
+  hint?: string;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const filePath = `uploads/${fileName}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage.from('guidebook-media').upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('guidebook-media').getPublicUrl(filePath);
+      onChange(data.publicUrl);
+      onToast('success', 'File uploaded successfully!');
+    } catch (err: unknown) {
+      const errObj = err as { message?: string };
+      onToast('error', `Upload error: ${errObj?.message || 'Check storage bucket'}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <FieldLabel hint={hint}>{label}</FieldLabel>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/*,application/pdf"
+          className="hidden"
+        />
+
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition-colors hover:bg-stone-50 disabled:opacity-50"
+        >
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin text-emerald-600" /> : <Upload className="h-4 w-4" />}
+          {uploading ? 'Uploading File…' : '📁 Upload Photo / File'}
+        </button>
+
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Or paste URL directly (https://…)"
+          className={FIELD_CLASS + ' flex-1 text-xs'}
+        />
+
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className="shrink-0 p-2 text-stone-400 hover:text-red-500"
+            title="Clear file"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {value && (
+        <div className="mt-1 flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-2">
+          {value.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) ? (
+            <img src={value} alt="Preview" className="h-12 w-16 rounded-lg object-cover" />
+          ) : (
+            <div className="flex h-12 w-16 items-center justify-center rounded-lg bg-stone-100 text-stone-400">
+              <ImageIcon className="h-5 w-5" />
+            </div>
+          )}
+          <span className="truncate text-xs text-stone-500">{value}</span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -511,7 +607,6 @@ function MultilingualField({
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {/* Ελληνικά */}
         <div className="flex flex-col gap-1.5">
           <span className="inline-flex w-fit items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
             🇬🇷 Ελληνικά (Γράψε εδώ)
@@ -535,7 +630,6 @@ function MultilingualField({
           )}
         </div>
 
-        {/* Αγγλικά */}
         <div className="flex flex-col gap-1.5">
           <span className="inline-flex w-fit items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-stone-600">
             🇬🇧 English (Auto-filled)
@@ -599,7 +693,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main Component                                                    */
+/*  Main Admin Component                                              */
 /* ------------------------------------------------------------------ */
 
 export default function AdminPage() {
@@ -612,7 +706,6 @@ export default function AdminPage() {
   const [autoTranslatingAll, setAutoTranslatingAll] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  // Places
   const [places, setPlaces] = useState<PlaceItem[]>([]);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<PlaceCategory | 'all'>('all');
@@ -697,7 +790,6 @@ export default function AdminPage() {
     setActiveSection('basic');
   }, []);
 
-  /** Auto-translate all Greek fields */
   const handleAutoTranslateAll = async () => {
     setAutoTranslatingAll(true);
     pushToast('success', 'Translating all Greek content to English, French & German…');
@@ -781,7 +873,6 @@ export default function AdminPage() {
       const errorObj = err as { message?: string; details?: string };
       const message = errorObj?.message || errorObj?.details || 'Error while saving.';
       pushToast('error', message);
-      console.error('Supabase save error details:', err);
     } finally {
       setSaving(false);
     }
@@ -823,7 +914,6 @@ export default function AdminPage() {
       const errorObj = err as { message?: string; details?: string };
       const message = errorObj?.message || errorObj?.details || 'Could not save place.';
       pushToast('error', message);
-      console.error('Save place error:', err);
     } finally {
       setSavingPlace(false);
     }
@@ -870,7 +960,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <h1 className="text-lg font-bold tracking-tight text-stone-900">Hostkey Admin Control</h1>
-                <p className="text-xs text-stone-500">Manage all guest portal data, contacts, manual & AI knowledge</p>
+                <p className="text-xs text-stone-500">Manage all guest portal data, media uploads, manual & AI knowledge</p>
               </div>
             </div>
 
@@ -957,10 +1047,10 @@ export default function AdminPage() {
           <div className="flex flex-col gap-6">
             <SectionHeading
               title="Basic Info & Host Contacts"
-              subtitle="Identification, address, Wi-Fi and direct host channels (used in Direct Support & Help modal)."
+              subtitle="Identification, address, cover images, Wi-Fi and direct host channels."
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField label="Property Name" value={form.name} onChange={set('name')} placeholder="Rethymno Luxury Suite" />
+              <TextField label="Property Name" value={form.name} onChange={set('name')} placeholder="Central Luxury Apartment" />
               <div className="flex flex-col gap-1.5">
                 <FieldLabel hint="URL identifier">Slug</FieldLabel>
                 <div className="flex gap-2">
@@ -968,7 +1058,7 @@ export default function AdminPage() {
                     type="text"
                     value={form.slug}
                     onChange={(e) => set('slug')(slugify(e.target.value))}
-                    placeholder="rethymno-luxury-suite"
+                    placeholder="central-luxury-apartment"
                     className={FIELD_CLASS}
                   />
                   <button
@@ -983,23 +1073,36 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <TextField label="Address" value={form.address} onChange={set('address')} placeholder="12 Arkadiou Street, Rethymno, Crete" />
-            <TextField label="Cover Image URL" value={form.cover_image} onChange={set('cover_image')} placeholder="https://…" type="url" />
+            <TextField label="Address" value={form.address} onChange={set('address')} placeholder="Moatsou 44, Rethymno" />
+
+            {/* File upload for Property Cover */}
+            <FileUploadField
+              label="Apartment Cover Image"
+              value={form.cover_image}
+              onChange={set('cover_image')}
+              onToast={pushToast}
+              hint="JPG, PNG, WEBP from your device"
+            />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <TextField label="Smart Lock / Keysafe Code" value={form.keysafe_code} onChange={set('keysafe_code')} placeholder="4821" />
-              <TextField label="Wi-Fi SSID" value={form.wifi_ssid} onChange={set('wifi_ssid')} placeholder="Suite_5G" />
+              <TextField label="Smart Lock / Keysafe Code" value={form.keysafe_code} onChange={set('keysafe_code')} placeholder="1987" />
+              <TextField label="Wi-Fi SSID" value={form.wifi_ssid} onChange={set('wifi_ssid')} placeholder="Huawei" />
               <TextField label="Wi-Fi Password" value={form.wifi_password} onChange={set('wifi_password')} placeholder="••••••••" />
             </div>
 
             <div className="mt-2 rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm shadow-stone-900/5">
               <p className="mb-3 text-sm font-bold text-stone-900">Direct Host Support & Contact Details</p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <TextField label="Host Display Name" value={form.host_name} onChange={set('host_name')} placeholder="Maria" />
-                <TextField label="Host Avatar URL" value={form.host_avatar_url} onChange={set('host_avatar_url')} placeholder="https://…" type="url" />
-                <TextField label="Host Phone (Call)" value={form.host_phone} onChange={set('host_phone')} placeholder="+30 690 000 0000" type="tel" />
-                <TextField label="Host WhatsApp Number" value={form.whatsapp_number} onChange={set('whatsapp_number')} placeholder="+30 690 000 0000" type="tel" />
-                <TextField label="Host Email" value={form.host_email} onChange={set('host_email')} placeholder="maria@hostkey.gr" type="email" />
+                <TextField label="Host Display Name" value={form.host_name} onChange={set('host_name')} placeholder="Manolis" />
+                <FileUploadField
+                  label="Host Profile Avatar"
+                  value={form.host_avatar_url}
+                  onChange={set('host_avatar_url')}
+                  onToast={pushToast}
+                />
+                <TextField label="Host Phone (Call)" value={form.host_phone} onChange={set('host_phone')} placeholder="+30 697 000 0000" type="tel" />
+                <TextField label="Host WhatsApp Number" value={form.whatsapp_number} onChange={set('whatsapp_number')} placeholder="+30 697 000 0000" type="tel" />
+                <TextField label="Host Email" value={form.host_email} onChange={set('host_email')} placeholder="host@example.com" type="email" />
               </div>
             </div>
           </div>
@@ -1084,11 +1187,10 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Separated Car Rentals & Transfers */}
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
               <span className="text-sm font-bold text-stone-900">🚗 Car Rentals</span>
               <MultilingualField label="Car Rentals Instructions & Recommendations" value={form.car_rentals_info} onChange={set('car_rentals_info')} />
-              <TextField label="Car Rentals Booking URL" value={form.car_rentals_booking_url} onChange={set('car_rentals_booking_url')} placeholder="https://rentalcars-example.com/…" type="url" />
+              <TextField label="Car Rentals Booking URL" value={form.car_rentals_booking_url} onChange={set('car_rentals_booking_url')} placeholder="https://sevenrental.gr" type="url" />
             </div>
 
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
@@ -1239,7 +1341,7 @@ export default function AdminPage() {
         )}
       </div>
 
-      {/* Sticky Save Bar (for Property) */}
+      {/* Sticky Save Bar */}
       {activeSection !== 'places' && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200/60 bg-white/95 backdrop-blur-xl">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-3.5">
@@ -1260,7 +1362,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Place Modal */}
+      {/* Place Modal with Direct Upload */}
       {editingPlace && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm">
           <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
@@ -1300,12 +1402,13 @@ export default function AdminPage() {
                 onChange={(val) => setEditingPlace({ ...editingPlace, description: val })}
               />
 
-              <TextField
-                label="Photo URL"
+              {/* Direct file upload for Place Photo */}
+              <FileUploadField
+                label="Place Photo / Image"
                 value={editingPlace.image_url}
                 onChange={(val) => setEditingPlace({ ...editingPlace, image_url: val })}
-                placeholder="https://images.unsplash.com/…"
-                type="url"
+                onToast={pushToast}
+                hint="Upload from device or paste image link"
               />
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
