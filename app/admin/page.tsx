@@ -12,13 +12,13 @@ import {
   Home as HomeIcon,
   LifeBuoy,
   Loader2,
-  MapPin,
   Phone,
   Plus,
   Save,
   Sparkles,
   Star,
   Trash2,
+  Wand2,
   X,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -27,14 +27,16 @@ import { supabase } from '@/lib/supabase';
 /*  Types                                                             */
 /* ------------------------------------------------------------------ */
 
-interface BilingualValue {
-  en: string;
+interface MultilingualValue {
   el: string;
+  en: string;
+  fr?: string;
+  de?: string;
   rest?: Record<string, string>;
 }
 
-function emptyBilingual(): BilingualValue {
-  return { en: '', el: '' };
+function emptyMultilingual(): MultilingualValue {
+  return { el: '', en: '', fr: '', de: '' };
 }
 
 interface PropertySummary {
@@ -68,7 +70,7 @@ export interface PlaceItem {
   id: string;
   category: PlaceCategory;
   name: string;
-  description: BilingualValue;
+  description: MultilingualValue;
   image_url: string;
   google_rating: string;
   wind_status: 'sheltered' | 'exposed' | '';
@@ -82,7 +84,7 @@ function emptyPlace(): PlaceItem {
     id: '',
     category: 'food',
     name: '',
-    description: emptyBilingual(),
+    description: emptyMultilingual(),
     image_url: '',
     google_rating: '4.8',
     wind_status: '',
@@ -92,16 +94,10 @@ function emptyPlace(): PlaceItem {
   };
 }
 
-export interface EmergencyContact {
-  label: string;
-  phone: string;
-  maps_query?: string;
-}
-
 interface PropertyFormState {
   id: string | null;
 
-  // --- Section 1: Basic info & Host ---
+  // Basic info & Host
   name: string;
   slug: string;
   address: string;
@@ -117,42 +113,42 @@ interface PropertyFormState {
   host_email: string;
   host_avatar_url: string;
 
-  // --- Section 2: Arrival & Logistics ---
-  building_access: BilingualValue;
-  elevator_info: BilingualValue;
-  parking_info: BilingualValue;
+  // Arrival & Logistics
+  building_access: MultilingualValue;
+  elevator_info: MultilingualValue;
+  parking_info: MultilingualValue;
   parking_maps_url: string;
-  late_arrival_info: BilingualValue;
+  late_arrival_info: MultilingualValue;
   checkin_steps_text: string;
   checkout_steps_text: string;
 
-  // --- Section 3: House manual ---
-  tap_water_info: BilingualValue;
-  plumbing_rules: BilingualValue;
-  sockets_appliances_info: BilingualValue;
-  tv_streaming_info: BilingualValue;
-  coffee_supplies_info: BilingualValue;
-  kitchen_appliances_info: BilingualValue;
-  laundry_info: BilingualValue;
-  dishwasher_info: BilingualValue;
-  hot_water_info: BilingualValue;
-  amenities_info: BilingualValue;
-  linens_towels_info: BilingualValue;
-  trash_info: BilingualValue;
+  // House manual
+  tap_water_info: MultilingualValue;
+  plumbing_rules: MultilingualValue;
+  sockets_appliances_info: MultilingualValue;
+  tv_streaming_info: MultilingualValue;
+  coffee_supplies_info: MultilingualValue;
+  kitchen_appliances_info: MultilingualValue;
+  laundry_info: MultilingualValue;
+  dishwasher_info: MultilingualValue;
+  hot_water_info: MultilingualValue;
+  amenities_info: MultilingualValue;
+  linens_towels_info: MultilingualValue;
+  trash_info: MultilingualValue;
   trash_maps_url: string;
-  house_rules: BilingualValue;
+  house_rules: MultilingualValue;
 
-  // --- Section 4: Mobility & Safety ---
-  luggage_storage_info: BilingualValue;
-  bus_transport_info: BilingualValue;
-  taxi_station_info: BilingualValue;
+  // Mobility & Safety
+  luggage_storage_info: MultilingualValue;
+  bus_transport_info: MultilingualValue;
+  taxi_station_info: MultilingualValue;
   taxi_phone: string;
   rentals_booking_url: string;
-  first_aid_location: BilingualValue;
+  first_aid_location: MultilingualValue;
   pharmacy_phone: string;
   pharmacy_finder_url: string;
 
-  // --- Section 5: AI Knowledge Base ---
+  // AI Knowledge Base
   ai_custom_instructions: string;
 }
 
@@ -169,13 +165,13 @@ interface ToastItem {
 /* ------------------------------------------------------------------ */
 
 const SECTIONS: { key: SectionKey; label: string; icon: typeof HomeIcon }[] = [
-  { key: 'basic', label: 'Basic & Host Info', icon: HomeIcon },
-  { key: 'arrival', label: 'Arrival & Lockbox', icon: DoorOpen },
+  { key: 'basic', label: 'Basic & Host', icon: HomeIcon },
+  { key: 'arrival', label: 'Arrival & Access', icon: DoorOpen },
   { key: 'manual', label: 'House Manual', icon: BookOpen },
   { key: 'mobility', label: 'Local Mobility', icon: LifeBuoy },
   { key: 'safety', label: 'Emergency & Safety', icon: Phone },
   { key: 'places', label: 'Explore Places', icon: Compass },
-  { key: 'ai', label: 'AI Concierge Knowledge', icon: Bot },
+  { key: 'ai', label: 'AI Knowledge', icon: Bot },
 ];
 
 const FIELD_CLASS =
@@ -203,35 +199,35 @@ function emptyForm(): PropertyFormState {
     host_email: '',
     host_avatar_url: '',
 
-    building_access: emptyBilingual(),
-    elevator_info: emptyBilingual(),
-    parking_info: emptyBilingual(),
+    building_access: emptyMultilingual(),
+    elevator_info: emptyMultilingual(),
+    parking_info: emptyMultilingual(),
     parking_maps_url: '',
-    late_arrival_info: emptyBilingual(),
+    late_arrival_info: emptyMultilingual(),
     checkin_steps_text: '',
     checkout_steps_text: '',
 
-    tap_water_info: emptyBilingual(),
-    plumbing_rules: emptyBilingual(),
-    sockets_appliances_info: emptyBilingual(),
-    tv_streaming_info: emptyBilingual(),
-    coffee_supplies_info: emptyBilingual(),
-    kitchen_appliances_info: emptyBilingual(),
-    laundry_info: emptyBilingual(),
-    dishwasher_info: emptyBilingual(),
-    hot_water_info: emptyBilingual(),
-    amenities_info: emptyBilingual(),
-    linens_towels_info: emptyBilingual(),
-    trash_info: emptyBilingual(),
+    tap_water_info: emptyMultilingual(),
+    plumbing_rules: emptyMultilingual(),
+    sockets_appliances_info: emptyMultilingual(),
+    tv_streaming_info: emptyMultilingual(),
+    coffee_supplies_info: emptyMultilingual(),
+    kitchen_appliances_info: emptyMultilingual(),
+    laundry_info: emptyMultilingual(),
+    dishwasher_info: emptyMultilingual(),
+    hot_water_info: emptyMultilingual(),
+    amenities_info: emptyMultilingual(),
+    linens_towels_info: emptyMultilingual(),
+    trash_info: emptyMultilingual(),
     trash_maps_url: '',
-    house_rules: emptyBilingual(),
+    house_rules: emptyMultilingual(),
 
-    luggage_storage_info: emptyBilingual(),
-    bus_transport_info: emptyBilingual(),
-    taxi_station_info: emptyBilingual(),
+    luggage_storage_info: emptyMultilingual(),
+    bus_transport_info: emptyMultilingual(),
+    taxi_station_info: emptyMultilingual(),
     taxi_phone: '',
     rentals_booking_url: '',
-    first_aid_location: emptyBilingual(),
+    first_aid_location: emptyMultilingual(),
     pharmacy_phone: '',
     pharmacy_finder_url: '',
 
@@ -239,21 +235,29 @@ function emptyForm(): PropertyFormState {
   };
 }
 
-function toBilingual(raw: unknown): BilingualValue {
-  if (raw == null) return emptyBilingual();
-  if (typeof raw === 'string') return { en: raw, el: '' };
+function toMultilingual(raw: unknown): MultilingualValue {
+  if (raw == null) return emptyMultilingual();
+  if (typeof raw === 'string') return { el: raw, en: raw, fr: '', de: '' };
   if (typeof raw === 'object' && !Array.isArray(raw)) {
     const obj = raw as Record<string, string>;
-    const { en, el, ...rest } = obj;
-    return { en: en ?? '', el: el ?? '', rest: Object.keys(rest).length > 0 ? rest : undefined };
+    const { el, en, fr, de, ...rest } = obj;
+    return {
+      el: el ?? '',
+      en: en ?? '',
+      fr: fr ?? '',
+      de: de ?? '',
+      rest: Object.keys(rest).length > 0 ? rest : undefined,
+    };
   }
-  return emptyBilingual();
+  return emptyMultilingual();
 }
 
-function fromBilingual(value: BilingualValue): Record<string, string> | null {
+function fromMultilingual(value: MultilingualValue): Record<string, string> | null {
   const merged: Record<string, string> = { ...(value.rest ?? {}) };
-  if (value.en.trim()) merged.en = value.en.trim();
   if (value.el.trim()) merged.el = value.el.trim();
+  if (value.en.trim()) merged.en = value.en.trim();
+  if (value.fr?.trim()) merged.fr = value.fr.trim();
+  if (value.de?.trim()) merged.de = value.de.trim();
   return Object.keys(merged).length > 0 ? merged : null;
 }
 
@@ -272,6 +276,25 @@ function slugify(input: string): string {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+async function translateText(greekText: string): Promise<{ en: string; fr: string; de: string }> {
+  if (!greekText.trim()) return { en: '', fr: '', de: '' };
+  try {
+    const res = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: greekText, targetLangs: ['en', 'fr', 'de'] }),
+    });
+    const data = await res.json();
+    return {
+      en: data.translations?.en ?? '',
+      fr: data.translations?.fr ?? '',
+      de: data.translations?.de ?? '',
+    };
+  } catch {
+    return { en: greekText, fr: '', de: '' };
+  }
 }
 
 function rowToForm(row: Record<string, unknown>): PropertyFormState {
@@ -302,35 +325,35 @@ function rowToForm(row: Record<string, unknown>): PropertyFormState {
     host_email: str('host_email'),
     host_avatar_url: str('host_avatar_url'),
 
-    building_access: toBilingual(row.building_access),
-    elevator_info: toBilingual(row.elevator_info),
-    parking_info: toBilingual(row.parking_info),
+    building_access: toMultilingual(row.building_access),
+    elevator_info: toMultilingual(row.elevator_info),
+    parking_info: toMultilingual(row.parking_info),
     parking_maps_url: str('parking_maps_url'),
-    late_arrival_info: toBilingual(row.late_arrival_info),
+    late_arrival_info: toMultilingual(row.late_arrival_info),
     checkin_steps_text: stepsToStr(row.checkin_steps),
     checkout_steps_text: stepsToStr(row.checkout_steps),
 
-    tap_water_info: toBilingual(row.tap_water_info),
-    plumbing_rules: toBilingual(row.plumbing_rules),
-    sockets_appliances_info: toBilingual(row.sockets_appliances_info),
-    tv_streaming_info: toBilingual(row.tv_streaming_info),
-    coffee_supplies_info: toBilingual(row.coffee_supplies_info),
-    kitchen_appliances_info: toBilingual(row.kitchen_appliances_info),
-    laundry_info: toBilingual(row.laundry_info),
-    dishwasher_info: toBilingual(row.dishwasher_info),
-    hot_water_info: toBilingual(row.hot_water_info),
-    amenities_info: toBilingual(row.amenities_info),
-    linens_towels_info: toBilingual(row.linens_towels_info),
-    trash_info: toBilingual(row.trash_info),
+    tap_water_info: toMultilingual(row.tap_water_info),
+    plumbing_rules: toMultilingual(row.plumbing_rules),
+    sockets_appliances_info: toMultilingual(row.sockets_appliances_info),
+    tv_streaming_info: toMultilingual(row.tv_streaming_info),
+    coffee_supplies_info: toMultilingual(row.coffee_supplies_info),
+    kitchen_appliances_info: toMultilingual(row.kitchen_appliances_info),
+    laundry_info: toMultilingual(row.laundry_info),
+    dishwasher_info: toMultilingual(row.dishwasher_info),
+    hot_water_info: toMultilingual(row.hot_water_info),
+    amenities_info: toMultilingual(row.amenities_info),
+    linens_towels_info: toMultilingual(row.linens_towels_info),
+    trash_info: toMultilingual(row.trash_info),
     trash_maps_url: str('trash_maps_url'),
-    house_rules: toBilingual(row.house_rules),
+    house_rules: toMultilingual(row.house_rules),
 
-    luggage_storage_info: toBilingual(row.luggage_storage_info),
-    bus_transport_info: toBilingual(row.bus_transport_info),
-    taxi_station_info: toBilingual(row.taxi_station_info),
+    luggage_storage_info: toMultilingual(row.luggage_storage_info),
+    bus_transport_info: toMultilingual(row.bus_transport_info),
+    taxi_station_info: toMultilingual(row.taxi_station_info),
     taxi_phone: str('taxi_phone'),
     rentals_booking_url: str('rentals_booking_url'),
-    first_aid_location: toBilingual(row.first_aid_location),
+    first_aid_location: toMultilingual(row.first_aid_location),
     pharmacy_phone: str('pharmacy_phone'),
     pharmacy_finder_url: str('pharmacy_finder_url'),
 
@@ -363,35 +386,35 @@ function formToPayload(form: PropertyFormState): Record<string, unknown> {
     host_email: fromText(form.host_email),
     host_avatar_url: fromText(form.host_avatar_url),
 
-    building_access: fromBilingual(form.building_access),
-    elevator_info: fromBilingual(form.elevator_info),
-    parking_info: fromBilingual(form.parking_info),
+    building_access: fromMultilingual(form.building_access),
+    elevator_info: fromMultilingual(form.elevator_info),
+    parking_info: fromMultilingual(form.parking_info),
     parking_maps_url: fromText(form.parking_maps_url),
-    late_arrival_info: fromBilingual(form.late_arrival_info),
+    late_arrival_info: fromMultilingual(form.late_arrival_info),
     checkin_steps: parseLines(form.checkin_steps_text),
     checkout_steps: parseLines(form.checkout_steps_text),
 
-    tap_water_info: fromBilingual(form.tap_water_info),
-    plumbing_rules: fromBilingual(form.plumbing_rules),
-    sockets_appliances_info: fromBilingual(form.sockets_appliances_info),
-    tv_streaming_info: fromBilingual(form.tv_streaming_info),
-    coffee_supplies_info: fromBilingual(form.coffee_supplies_info),
-    kitchen_appliances_info: fromBilingual(form.kitchen_appliances_info),
-    laundry_info: fromBilingual(form.laundry_info),
-    dishwasher_info: fromBilingual(form.dishwasher_info),
-    hot_water_info: fromBilingual(form.hot_water_info),
-    amenities_info: fromBilingual(form.amenities_info),
-    linens_towels_info: fromBilingual(form.linens_towels_info),
-    trash_info: fromBilingual(form.trash_info),
+    tap_water_info: fromMultilingual(form.tap_water_info),
+    plumbing_rules: fromMultilingual(form.plumbing_rules),
+    sockets_appliances_info: fromMultilingual(form.sockets_appliances_info),
+    tv_streaming_info: fromMultilingual(form.tv_streaming_info),
+    coffee_supplies_info: fromMultilingual(form.coffee_supplies_info),
+    kitchen_appliances_info: fromMultilingual(form.kitchen_appliances_info),
+    laundry_info: fromMultilingual(form.laundry_info),
+    dishwasher_info: fromMultilingual(form.dishwasher_info),
+    hot_water_info: fromMultilingual(form.hot_water_info),
+    amenities_info: fromMultilingual(form.amenities_info),
+    linens_towels_info: fromMultilingual(form.linens_towels_info),
+    trash_info: fromMultilingual(form.trash_info),
     trash_maps_url: fromText(form.trash_maps_url),
-    house_rules: fromBilingual(form.house_rules),
+    house_rules: fromMultilingual(form.house_rules),
 
-    luggage_storage_info: fromBilingual(form.luggage_storage_info),
-    bus_transport_info: fromBilingual(form.bus_transport_info),
-    taxi_station_info: fromBilingual(form.taxi_station_info),
+    luggage_storage_info: fromMultilingual(form.luggage_storage_info),
+    bus_transport_info: fromMultilingual(form.bus_transport_info),
+    taxi_station_info: fromMultilingual(form.taxi_station_info),
     taxi_phone: fromText(form.taxi_phone),
     rentals_booking_url: fromText(form.rentals_booking_url),
-    first_aid_location: fromBilingual(form.first_aid_location),
+    first_aid_location: fromMultilingual(form.first_aid_location),
     pharmacy_phone: fromText(form.pharmacy_phone),
     pharmacy_finder_url: fromText(form.pharmacy_finder_url),
 
@@ -435,7 +458,8 @@ function TextField({
   );
 }
 
-function BilingualField({
+/** Bilingual / Multilingual Field with One-Click Translate */
+function MultilingualField({
   label,
   value,
   onChange,
@@ -443,59 +467,86 @@ function BilingualField({
   hint,
 }: {
   label: string;
-  value: BilingualValue;
-  onChange: (value: BilingualValue) => void;
+  value: MultilingualValue;
+  onChange: (value: MultilingualValue) => void;
   multiline?: boolean;
   hint?: string;
 }) {
+  const [translating, setTranslating] = useState(false);
   const baseClass = FIELD_CLASS + (multiline ? ' resize-y' : '');
+
+  const handleTranslate = async () => {
+    if (!value.el.trim()) return;
+    setTranslating(true);
+    const trans = await translateText(value.el);
+    onChange({
+      ...value,
+      en: trans.en,
+      fr: trans.fr,
+      de: trans.de,
+    });
+    setTranslating(false);
+  };
+
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-stone-200/70 bg-white p-4 shadow-sm shadow-stone-900/5">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-semibold text-stone-900">{label}</span>
-        {hint && <span className="text-[11px] text-stone-400">{hint}</span>}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-bold text-stone-900">{label}</span>
+        <button
+          type="button"
+          onClick={handleTranslate}
+          disabled={translating || !value.el.trim()}
+          className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
+        >
+          {translating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+          {translating ? 'Translating…' : '🪄 Translate to EN, FR, DE'}
+        </button>
       </div>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {/* Ελληνικά (Πρωτεύουσα γλώσσα εισαγωγής) */}
         <div className="flex flex-col gap-1.5">
-          <span className="inline-flex w-fit items-center rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-stone-500">
-            EN
+          <span className="inline-flex w-fit items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
+            🇬🇷 Ελληνικά (Γράψε εδώ)
           </span>
           {multiline ? (
             <textarea
               rows={3}
-              value={value.en}
-              onChange={(e) => onChange({ ...value, en: e.target.value })}
-              placeholder="English text"
-              className={baseClass}
+              value={value.el}
+              onChange={(e) => onChange({ ...value, el: e.target.value })}
+              placeholder="Πληκτρολόγησε στα ελληνικά…"
+              className={baseClass + ' border-emerald-300'}
             />
           ) : (
             <input
               type="text"
-              value={value.en}
-              onChange={(e) => onChange({ ...value, en: e.target.value })}
-              placeholder="English text"
-              className={baseClass}
+              value={value.el}
+              onChange={(e) => onChange({ ...value, el: e.target.value })}
+              placeholder="Πληκτρολόγησε στα ελληνικά…"
+              className={baseClass + ' border-emerald-300'}
             />
           )}
         </div>
+
+        {/* Αγγλικά */}
         <div className="flex flex-col gap-1.5">
-          <span className="inline-flex w-fit items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
-            EL
+          <span className="inline-flex w-fit items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-stone-600">
+            🇬🇧 English (Auto-filled)
           </span>
           {multiline ? (
             <textarea
               rows={3}
-              value={value.el}
-              onChange={(e) => onChange({ ...value, el: e.target.value })}
-              placeholder="Ελληνικό κείμενο"
+              value={value.en}
+              onChange={(e) => onChange({ ...value, en: e.target.value })}
+              placeholder="English translation…"
               className={baseClass}
             />
           ) : (
             <input
               type="text"
-              value={value.el}
-              onChange={(e) => onChange({ ...value, el: e.target.value })}
-              placeholder="Ελληνικό κείμενο"
+              value={value.en}
+              onChange={(e) => onChange({ ...value, en: e.target.value })}
+              placeholder="English translation…"
               className={baseClass}
             />
           )}
@@ -551,6 +602,7 @@ export default function AdminPage() {
   const [loadingList, setLoadingList] = useState(true);
   const [loadingProperty, setLoadingProperty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoTranslatingAll, setAutoTranslatingAll] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   // Places
@@ -599,7 +651,7 @@ export default function AdminPage() {
       id: String(row.id),
       category: row.category as PlaceCategory,
       name: String(row.name ?? ''),
-      description: toBilingual(row.description),
+      description: toMultilingual(row.description),
       image_url: String(row.image_url ?? ''),
       google_rating: row.google_rating != null ? String(row.google_rating) : '4.8',
       wind_status: (row.wind_status as 'sheltered' | 'exposed') || '',
@@ -625,7 +677,7 @@ export default function AdminPage() {
       const { data, error } = await supabase.from('properties').select('*').eq('id', id).single();
       setLoadingProperty(false);
       if (error || !data) {
-        pushToast('error', `Could not load that property: ${error?.message ?? 'not found'}`);
+        pushToast('error', `Could not load property: ${error?.message ?? 'not found'}`);
         return;
       }
       setForm(rowToForm(data as Record<string, unknown>));
@@ -638,14 +690,64 @@ export default function AdminPage() {
     setActiveSection('basic');
   }, []);
 
+  /** Auto-translate all Greek fields across the entire property */
+  const handleAutoTranslateAll = async () => {
+    setAutoTranslatingAll(true);
+    pushToast('success', 'Translating all Greek content to English, French & German…');
+
+    const updated = { ...form };
+    const fields: (keyof PropertyFormState)[] = [
+      'building_access',
+      'elevator_info',
+      'parking_info',
+      'late_arrival_info',
+      'tap_water_info',
+      'plumbing_rules',
+      'sockets_appliances_info',
+      'tv_streaming_info',
+      'coffee_supplies_info',
+      'kitchen_appliances_info',
+      'laundry_info',
+      'dishwasher_info',
+      'hot_water_info',
+      'amenities_info',
+      'linens_towels_info',
+      'trash_info',
+      'house_rules',
+      'luggage_storage_info',
+      'bus_transport_info',
+      'taxi_station_info',
+      'first_aid_location',
+    ];
+
+    await Promise.all(
+      fields.map(async (key) => {
+        const val = updated[key] as MultilingualValue;
+        if (val?.el?.trim()) {
+          const trans = await translateText(val.el);
+          (updated[key] as MultilingualValue) = {
+            ...val,
+            en: trans.en,
+            fr: trans.fr,
+            de: trans.de,
+          };
+        }
+      }),
+    );
+
+    setForm(updated);
+    setAutoTranslatingAll(false);
+    pushToast('success', 'All fields translated! Click "Save Changes" to apply.');
+  };
+
   const handleSave = useCallback(async () => {
     if (!form.name.trim()) {
-      pushToast('error', 'Please enter a property name before saving.');
+      pushToast('error', 'Please enter a property name.');
       setActiveSection('basic');
       return;
     }
     if (!form.slug.trim()) {
-      pushToast('error', 'Please enter a URL slug before saving.');
+      pushToast('error', 'Please enter a URL slug.');
       setActiveSection('basic');
       return;
     }
@@ -658,16 +760,16 @@ export default function AdminPage() {
         const { data, error } = await supabase.from('properties').update(payload).eq('id', form.id).select().single();
         if (error) throw error;
         setForm(rowToForm(data as Record<string, unknown>));
-        pushToast('success', `${form.name} was updated successfully.`);
+        pushToast('success', `${form.name} updated successfully.`);
       } else {
         const { data, error } = await supabase.from('properties').insert(payload).select().single();
         if (error) throw error;
         setForm(rowToForm(data as Record<string, unknown>));
-        pushToast('success', `${form.name} was created successfully.`);
+        pushToast('success', `${form.name} created successfully.`);
       }
       await loadPropertyList();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Something went wrong while saving.';
+      const message = err instanceof Error ? err.message : 'Error while saving.';
       pushToast('error', message);
     } finally {
       setSaving(false);
@@ -685,7 +787,7 @@ export default function AdminPage() {
     const payload = {
       category: editingPlace.category,
       name: editingPlace.name.trim(),
-      description: fromBilingual(editingPlace.description),
+      description: fromMultilingual(editingPlace.description),
       image_url: fromText(editingPlace.image_url),
       google_rating: editingPlace.google_rating ? parseFloat(editingPlace.google_rating) : null,
       wind_status: editingPlace.wind_status || null,
@@ -748,14 +850,26 @@ export default function AdminPage() {
       {/* Header */}
       <div className="sticky top-0 z-30 border-b border-stone-200/60 bg-[#F7F4EC]/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-md">
-              <Sparkles className="h-5 w-5" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-md">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight text-stone-900">Hostkey Admin Control</h1>
+                <p className="text-xs text-stone-500">Manage all guest portal data, contacts, manual & AI knowledge</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-stone-900">Hostkey Admin Control</h1>
-              <p className="text-xs text-stone-500">Manage all guest portal data, contacts, manual & AI knowledge</p>
-            </div>
+
+            <button
+              type="button"
+              onClick={handleAutoTranslateAll}
+              disabled={autoTranslatingAll}
+              className="flex items-center gap-2 rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
+            >
+              {autoTranslatingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {autoTranslatingAll ? 'Translating All…' : '🪄 Auto-Translate All Fields'}
+            </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
@@ -890,11 +1004,11 @@ export default function AdminPage() {
               <TextField label="Check-out Time" value={form.check_out_time} onChange={set('check_out_time')} placeholder="11:00" />
             </div>
 
-            <BilingualField label="Building & Elevator Access Instructions" value={form.building_access} onChange={set('building_access')} />
-            <BilingualField label="Elevator Specific Info" value={form.elevator_info} onChange={set('elevator_info')} />
-            <BilingualField label="Parking Instructions" value={form.parking_info} onChange={set('parking_info')} />
+            <MultilingualField label="Building & Elevator Access Instructions" value={form.building_access} onChange={set('building_access')} />
+            <MultilingualField label="Elevator Specific Info" value={form.elevator_info} onChange={set('elevator_info')} />
+            <MultilingualField label="Parking Instructions" value={form.parking_info} onChange={set('parking_info')} />
             <TextField label="Parking — Google Maps URL" value={form.parking_maps_url} onChange={set('parking_maps_url')} placeholder="https://maps.google.com/…" type="url" />
-            <BilingualField label="Late Arrival Instructions" value={form.late_arrival_info} onChange={set('late_arrival_info')} />
+            <MultilingualField label="Late Arrival Instructions" value={form.late_arrival_info} onChange={set('late_arrival_info')} />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5 rounded-2xl border border-stone-200/70 bg-white p-4">
@@ -925,21 +1039,21 @@ export default function AdminPage() {
         {/* 3. House Manual */}
         {activeSection === 'manual' && (
           <div className="flex flex-col gap-5">
-            <SectionHeading title="Apartment House Manual" subtitle="Every accordion guide inside the manual tab — bilingual (EN / EL)." />
-            <BilingualField label="Tap Water & Drinking Guide" value={form.tap_water_info} onChange={set('tap_water_info')} />
-            <BilingualField label="Plumbing & Toilet Paper Rules" value={form.plumbing_rules} onChange={set('plumbing_rules')} />
-            <BilingualField label="Electrical Sockets & Voltage" value={form.sockets_appliances_info} onChange={set('sockets_appliances_info')} />
-            <BilingualField label="TV & Streaming Apps" value={form.tv_streaming_info} onChange={set('tv_streaming_info')} />
-            <BilingualField label="Coffee Machine & Supplies" value={form.coffee_supplies_info} onChange={set('coffee_supplies_info')} />
-            <BilingualField label="Stove, Oven & Microwave" value={form.kitchen_appliances_info} onChange={set('kitchen_appliances_info')} />
-            <BilingualField label="Washing Machine & Laundry" value={form.laundry_info} onChange={set('laundry_info')} />
-            <BilingualField label="Dishwasher Guide" value={form.dishwasher_info} onChange={set('dishwasher_info')} />
-            <BilingualField label="Hot Water / Solar Boiler" value={form.hot_water_info} onChange={set('hot_water_info')} />
-            <BilingualField label="Air Conditioning & Heating" value={form.amenities_info} onChange={set('amenities_info')} />
-            <BilingualField label="Extra Linens, Towels & Pillows" value={form.linens_towels_info} onChange={set('linens_towels_info')} />
-            <BilingualField label="Trash & Recycling Instructions" value={form.trash_info} onChange={set('trash_info')} />
+            <SectionHeading title="Apartment House Manual" subtitle="Every accordion guide inside the manual tab — multilingual auto-translated." />
+            <MultilingualField label="Tap Water & Drinking Guide" value={form.tap_water_info} onChange={set('tap_water_info')} />
+            <MultilingualField label="Plumbing & Toilet Paper Rules" value={form.plumbing_rules} onChange={set('plumbing_rules')} />
+            <MultilingualField label="Electrical Sockets & Voltage" value={form.sockets_appliances_info} onChange={set('sockets_appliances_info')} />
+            <MultilingualField label="TV & Streaming Apps" value={form.tv_streaming_info} onChange={set('tv_streaming_info')} />
+            <MultilingualField label="Coffee Machine & Supplies" value={form.coffee_supplies_info} onChange={set('coffee_supplies_info')} />
+            <MultilingualField label="Stove, Oven & Microwave" value={form.kitchen_appliances_info} onChange={set('kitchen_appliances_info')} />
+            <MultilingualField label="Washing Machine & Laundry" value={form.laundry_info} onChange={set('laundry_info')} />
+            <MultilingualField label="Dishwasher Guide" value={form.dishwasher_info} onChange={set('dishwasher_info')} />
+            <MultilingualField label="Hot Water / Solar Boiler" value={form.hot_water_info} onChange={set('hot_water_info')} />
+            <MultilingualField label="Air Conditioning & Heating" value={form.amenities_info} onChange={set('amenities_info')} />
+            <MultilingualField label="Extra Linens, Towels & Pillows" value={form.linens_towels_info} onChange={set('linens_towels_info')} />
+            <MultilingualField label="Trash & Recycling Instructions" value={form.trash_info} onChange={set('trash_info')} />
             <TextField label="Trash Bins — Google Maps Pin URL" value={form.trash_maps_url} onChange={set('trash_maps_url')} placeholder="https://maps.google.com/…" type="url" />
-            <BilingualField label="House Rules & Quiet Hours" value={form.house_rules} onChange={set('house_rules')} />
+            <MultilingualField label="House Rules & Quiet Hours" value={form.house_rules} onChange={set('house_rules')} />
           </div>
         )}
 
@@ -947,9 +1061,9 @@ export default function AdminPage() {
         {activeSection === 'mobility' && (
           <div className="flex flex-col gap-5">
             <SectionHeading title="Local Mobility & Transport" subtitle="Information cards for baggage, public buses, taxi stands and vehicle rentals." />
-            <BilingualField label="Luggage Storage Lockers Info" value={form.luggage_storage_info} onChange={set('luggage_storage_info')} />
-            <BilingualField label="Public Bus / KTEL Timetables & Info" value={form.bus_transport_info} onChange={set('bus_transport_info')} />
-            <BilingualField label="Taxi Ranks & Radio-Taxi Info" value={form.taxi_station_info} onChange={set('taxi_station_info')} />
+            <MultilingualField label="Luggage Storage Lockers Info" value={form.luggage_storage_info} onChange={set('luggage_storage_info')} />
+            <MultilingualField label="Public Bus / KTEL Timetables & Info" value={form.bus_transport_info} onChange={set('bus_transport_info')} />
+            <MultilingualField label="Taxi Ranks & Radio-Taxi Info" value={form.taxi_station_info} onChange={set('taxi_station_info')} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <TextField label="Taxi Phone" value={form.taxi_phone} onChange={set('taxi_phone')} placeholder="+30 28310 25000" type="tel" />
               <TextField label="Car & Transfer Booking URL" value={form.rentals_booking_url} onChange={set('rentals_booking_url')} placeholder="https://…" type="url" />
@@ -961,7 +1075,7 @@ export default function AdminPage() {
         {activeSection === 'safety' && (
           <div className="flex flex-col gap-5">
             <SectionHeading title="Emergency, Pharmacy & First Aid" subtitle="Safety information cards shown on the Support tab." />
-            <BilingualField label="First Aid Kit Exact Location" value={form.first_aid_location} onChange={set('first_aid_location')} />
+            <MultilingualField label="First Aid Kit Exact Location" value={form.first_aid_location} onChange={set('first_aid_location')} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <TextField label="Duty Pharmacy Phone" value={form.pharmacy_phone} onChange={set('pharmacy_phone')} placeholder="+30 28310 12345" type="tel" />
               <TextField label="24/7 Pharmacy Finder URL" value={form.pharmacy_finder_url} onChange={set('pharmacy_finder_url')} placeholder="https://…" type="url" />
@@ -1049,7 +1163,7 @@ export default function AdminPage() {
                           )}
                         </div>
                         <h3 className="mt-1 text-base font-bold text-stone-900">{place.name}</h3>
-                        <p className="mt-1 line-clamp-2 text-xs text-stone-500">{place.description.en || place.description.el || '—'}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-stone-500">{place.description.el || place.description.en || '—'}</p>
                       </div>
                     </div>
                     <div className="flex border-t border-stone-100 p-2 gap-2 bg-stone-50">
@@ -1153,7 +1267,7 @@ export default function AdminPage() {
                 placeholder="e.g. Taverna Othonas"
               />
 
-              <BilingualField
+              <MultilingualField
                 label="Description"
                 value={editingPlace.description}
                 onChange={(val) => setEditingPlace({ ...editingPlace, description: val })}
