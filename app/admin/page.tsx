@@ -509,7 +509,7 @@ function FileUploadField({
     } catch (err: unknown) {
       const errObj = err as { message?: string };
       onToast('error', `Upload error: ${errObj?.message || 'Check storage bucket'}`);
-    } fontally {
+    } finally {
       setUploading(false);
     }
   };
