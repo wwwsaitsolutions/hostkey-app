@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   AlertCircle,
@@ -23,16 +24,12 @@ import {
   Wand2,
   X,
   ImageIcon,
-  Lock,
-  ArrowRight,
   LogOut,
   Crown,
   Check,
-  ShieldCheck,
+  User,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'hostkey2026';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -107,7 +104,6 @@ function emptyPlace(): PlaceItem {
 
 interface PropertyFormState {
   id: string | null;
-
   name: string;
   slug: string;
   address: string;
@@ -369,7 +365,7 @@ function rowToForm(row: Record<string, unknown>): PropertyFormState {
   };
 }
 
-function formToPayload(form: PropertyFormState): Record<string, unknown> {
+function formToPayload(form: PropertyFormState, userId?: string | null): Record<string, unknown> {
   const parseLines = (text: string): string[] | null => {
     const lines = text
       .split('\n')
@@ -378,7 +374,7 @@ function formToPayload(form: PropertyFormState): Record<string, unknown> {
     return lines.length > 0 ? lines : null;
   };
 
-  return {
+  const payload: Record<string, unknown> = {
     name: form.name.trim(),
     slug: form.slug.trim(),
     address: fromText(form.address),
@@ -430,6 +426,12 @@ function formToPayload(form: PropertyFormState): Record<string, unknown> {
 
     ai_custom_instructions: fromText(form.ai_custom_instructions),
   };
+
+  if (userId) {
+    payload.user_id = userId;
+  }
+
+  return payload;
 }
 
 /* ------------------------------------------------------------------ */
@@ -701,14 +703,13 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main Admin Component with Pro Feature Modals                      */
+/*  Main Admin Component with User Isolation                          */
 /* ------------------------------------------------------------------ */
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [authChecked, setAuthChecked] = useState<boolean>(false);
-  const [passwordInput, setPasswordInput] = useState<string>('');
-  const [passwordError, setPasswordError] = useState<string>('');
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [authChecking, setAuthChecking] = useState(true);
 
   const [propertyList, setPropertyList] = useState<PropertySummary[]>([]);
   const [form, setForm] = useState<PropertyFormState>(emptyForm());
@@ -727,31 +728,6 @@ export default function AdminPage() {
   const [editingPlace, setEditingPlace] = useState<PlaceItem | null>(null);
   const [savingPlace, setSavingPlace] = useState(false);
 
-  useEffect(() => {
-    const sessionAuth = typeof window !== 'undefined' ? localStorage.getItem('hostkey_admin_auth') : null;
-    if (sessionAuth === 'true') {
-      setIsAuthenticated(true);
-    }
-    setAuthChecked(true);
-  }, []);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordInput === ADMIN_PASSWORD) {
-      localStorage.setItem('hostkey_admin_auth', 'true');
-      setIsAuthenticated(true);
-      setPasswordError('');
-    } else {
-      setPasswordError('Incorrect password. Please try again.');
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('hostkey_admin_auth');
-    setIsAuthenticated(false);
-    setPasswordInput('');
-  };
-
   const pushToast = useCallback((type: 'success' | 'error', message: string) => {
     const id = Date.now() + Math.random();
     setToasts((current) => [...current, { id, type, message }]);
@@ -764,9 +740,33 @@ export default function AdminPage() {
     setToasts((current) => current.filter((t) => t.id !== id));
   }, []);
 
+  // Έλεγχος Συνεδρίας Χρήστη (Supabase Auth)
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+      } else {
+        setUser(session.user);
+      }
+      setAuthChecking(false);
+    };
+    checkUser();
+  }, [router]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
+  // Φόρτωση μόνο των καταλυμάτων του συνδεδεμένου χρήστη
   const loadPropertyList = useCallback(async () => {
     setLoadingList(true);
-    const { data, error } = await supabase.from('properties').select('id, name, slug').order('name', { ascending: true });
+    const { data, error } = await supabase
+      .from('properties')
+      .select('id, name, slug')
+      .order('name', { ascending: true });
+    
     setLoadingList(false);
     if (error) {
       pushToast('error', `Could not load properties: ${error.message}`);
@@ -803,11 +803,11 @@ export default function AdminPage() {
   }, [pushToast]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (user) {
       loadPropertyList();
       loadPlaces();
     }
-  }, [isAuthenticated, loadPropertyList, loadPlaces]);
+  }, [user, loadPropertyList, loadPlaces]);
 
   const handleSelectProperty = useCallback(
     async (id: string) => {
@@ -901,7 +901,7 @@ export default function AdminPage() {
     }
 
     setSaving(true);
-    const payload = formToPayload(form);
+    const payload = formToPayload(form, user?.id);
 
     try {
       if (form.id) {
@@ -923,7 +923,7 @@ export default function AdminPage() {
     } finally {
       setSaving(false);
     }
-  }, [form, agreedTerms, loadPropertyList, pushToast]);
+  }, [form, agreedTerms, user?.id, loadPropertyList, pushToast]);
 
   const handleSavePlace = useCallback(async () => {
     if (!editingPlace) return;
@@ -993,59 +993,14 @@ export default function AdminPage() {
     return places.filter((p) => p.category === selectedCategoryFilter);
   }, [places, selectedCategoryFilter]);
 
-  if (!authChecked) return null;
-
-  /* ------------------------------------------------------------------ */
-  /*  Security Login Screen                                             */
-  /* ------------------------------------------------------------------ */
-  if (!isAuthenticated) {
+  if (authChecking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F7F4EC] p-6 text-stone-900">
-        <div className="w-full max-w-md rounded-3xl border border-stone-200/80 bg-white p-8 shadow-xl shadow-stone-900/5">
-          <div className="flex flex-col items-center text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-600/20">
-              <Lock className="h-7 w-7" />
-            </div>
-            <h1 className="mt-5 text-xl font-bold text-stone-900">Hostkey Admin Portal</h1>
-            <p className="mt-1.5 text-xs text-stone-500">Εισάγετε τον κωδικό πρόσβασης για να διαχειριστείτε τα καταλύματα.</p>
-          </div>
-
-          <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-4">
-            <div>
-              <input
-                type="password"
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Κωδικός πρόσβασης..."
-                className={FIELD_CLASS + ' text-center tracking-wider'}
-                autoFocus
-              />
-              {passwordError && <p className="mt-2 text-center text-xs font-semibold text-red-600">{passwordError}</p>}
-            </div>
-
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-emerald-700"
-            >
-              <span>Είσοδος στο Portal</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-
-            <Link
-              href="/"
-              className="mt-2 text-center text-xs font-semibold text-stone-400 hover:text-stone-700"
-            >
-              ← Επιστροφή στην Αρχική
-            </Link>
-          </form>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F4EC]">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
       </div>
     );
   }
 
-  /* ------------------------------------------------------------------ */
-  /*  Admin Dashboard                                                   */
-  /* ------------------------------------------------------------------ */
   return (
     <div className="min-h-screen bg-[#F7F4EC] pb-28 text-stone-900">
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -1060,7 +1015,10 @@ export default function AdminPage() {
               </Link>
               <div>
                 <h1 className="text-lg font-bold tracking-tight text-stone-900">Hostkey Admin Control</h1>
-                <p className="text-xs text-stone-500">Manage all guest portal data, media uploads, manual & AI knowledge</p>
+                <p className="flex items-center gap-1.5 text-xs text-stone-500">
+                  <User className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>{user?.email}</span>
+                </p>
               </div>
             </div>
 
@@ -1153,7 +1111,6 @@ export default function AdminPage() {
 
       {/* Form Content */}
       <div className="mx-auto max-w-5xl px-5 pt-6">
-        {/* 1. Basic & Host Info */}
         {activeSection === 'basic' && (
           <div className="flex flex-col gap-6">
             <SectionHeading
@@ -1313,7 +1270,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Car Rentals Pro Box */}
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-stone-900">🚗 Car Rentals</span>
@@ -1330,7 +1286,6 @@ export default function AdminPage() {
               <TextField label="Car Rentals Booking URL" value={form.car_rentals_booking_url} onChange={set('car_rentals_booking_url')} placeholder="https://sevenrental.gr" type="url" />
             </div>
 
-            {/* Airport Transfers Box */}
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-stone-900">🚐 Airport & Port Transfers</span>
