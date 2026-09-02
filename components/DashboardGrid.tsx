@@ -60,6 +60,7 @@ import {
   Share2,
   Car,
   ListChecks,
+  ImageIcon,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useBeachWeather } from '@/lib/useBeachWeather';
@@ -122,6 +123,7 @@ export interface ManualItem {
   title: string;
   icon: ManualIconKey;
   body: string | string[];
+  images?: string[];
 }
 
 export interface Property {
@@ -161,7 +163,7 @@ export interface Property {
   parking_maps_url?: string | null;
   late_arrival_info?: LocalizedText;
 
-  // Apartment manual
+  // Apartment manual text
   tv_streaming_info?: LocalizedText;
   coffee_supplies_info?: LocalizedText;
   kitchen_appliances_info?: LocalizedText;
@@ -175,6 +177,13 @@ export interface Property {
   tap_water_info?: LocalizedText;
   plumbing_rules?: LocalizedText;
   sockets_appliances_info?: LocalizedText;
+
+  // Appliance instruction images
+  tv_images?: string[] | null;
+  laundry_images?: string[] | null;
+  dishwasher_images?: string[] | null;
+  hot_water_images?: string[] | null;
+  ac_images?: string[] | null;
 
   // Explore
   luggage_storage_info?: LocalizedText;
@@ -2190,7 +2199,6 @@ function HeroHeader({
 }) {
   const t = useT();
   const directionsHref = mapsHref(property);
-  const paperPlaneHref = mailHref(property.host_email);
   const coverImage = property.cover_image ?? property.hero_image_url;
 
   const copyAddress = async () => {
@@ -2521,17 +2529,20 @@ function ManualAccordionRow({
   expanded,
   onToggle,
   onOpenWifi,
+  onImageClick,
 }: {
   item: ManualItem;
   property: Property;
   expanded: boolean;
   onToggle: () => void;
   onOpenWifi?: () => void;
+  onImageClick?: (url: string) => void;
 }) {
   const t = useT();
   const Icon = MANUAL_ICONS[item.icon];
   const tone = MANUAL_TONES[item.icon];
   const bodyLines = Array.isArray(item.body) ? item.body : [item.body];
+  const validImages = (item.images || []).filter(Boolean);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-stone-200/60 bg-white shadow-sm shadow-stone-900/5">
@@ -2543,7 +2554,15 @@ function ManualAccordionRow({
         ) : (
           <IconSquircle icon={Icon} tone={tone} />
         )}
-        <span className="flex-1 text-sm font-semibold text-stone-900">{item.title}</span>
+        <div className="flex-1 flex flex-col">
+          <span className="text-sm font-semibold text-stone-900">{item.title}</span>
+          {validImages.length > 0 && (
+            <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 mt-0.5">
+              <ImageIcon className="h-3 w-3" />
+              <span>{validImages.length} {validImages.length === 1 ? 'photo' : 'photos'}</span>
+            </span>
+          )}
+        </div>
         <ChevronDown className={`h-4 w-4 text-stone-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </motion.button>
 
@@ -2584,6 +2603,35 @@ function ManualAccordionRow({
                 <p className="text-sm leading-relaxed text-stone-600">{bodyLines[0]}</p>
               )}
 
+              {/* Εμφάνιση επεξηγηματικών φωτογραφιών συσκευής */}
+              {validImages.length > 0 && (
+                <div className="mt-4 flex flex-col gap-2">
+                  <p className="text-xs font-bold text-stone-500">
+                    {t('manual.photos_hint', 'Instruction & Setting Photos:')}
+                  </p>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {validImages.map((imgUrl, imgIdx) => (
+                      <div
+                        key={imgIdx}
+                        onClick={() => onImageClick?.(imgUrl)}
+                        className="group relative cursor-pointer overflow-hidden rounded-xl border border-stone-200 bg-stone-100 shadow-sm transition-transform active:scale-[0.98]"
+                      >
+                        <img
+                          src={imgUrl}
+                          alt={`${item.title} ${imgIdx + 1}`}
+                          className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition-opacity group-hover:opacity-100">
+                          <span className="rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-stone-900 shadow-sm">
+                            🔍 Zoom / Προβολή
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {item.key === 'trash' && (
                 <motion.a
                   whileTap={{ scale: 0.97 }}
@@ -2610,6 +2658,7 @@ interface ManualFieldDef {
   icon: ManualIconKey;
   title: string;
   body: string;
+  images?: string[];
 }
 
 function ManualTab({
@@ -2626,6 +2675,7 @@ function ManualTab({
   onOpenWifi: () => void;
 }) {
   const t = useT();
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   const manualItems: ManualItem[] = useMemo(() => {
     const defs: ManualFieldDef[] = [
@@ -2674,6 +2724,7 @@ function ManualTab({
         body:
           localize(property.tv_streaming_info, language) ||
           t('manual.tv_desc', 'Smart TV with Netflix, YouTube. Turn on with the black remote, press Home for streaming apps.'),
+        images: property.tv_images ? Array.from(property.tv_images) : undefined,
       },
       {
         key: 'coffee',
@@ -2704,6 +2755,7 @@ function ManualTab({
             'manual.laundry_desc',
             'Washing machine is in the bathroom/closet. Detergent pods provided under the sink. We recommend Program 3 (Quick 30min).',
           ),
+        images: property.laundry_images ? Array.from(property.laundry_images) : undefined,
       },
       {
         key: 'dishwasher',
@@ -2712,6 +2764,7 @@ function ManualTab({
         body:
           localize(property.dishwasher_info, language) ||
           t('manual.dishwasher_desc', 'Place one detergent tab in the dispenser and select Eco 50°C mode, then close door firmly to start.'),
+        images: property.dishwasher_images ? Array.from(property.dishwasher_images) : undefined,
       },
       {
         key: 'water',
@@ -2723,6 +2776,7 @@ function ManualTab({
             'manual.water_desc',
             'Hot water is solar-heated during the day. If it runs low, flip the booster switch beside the bathroom door and wait 15 minutes.',
           ),
+        images: property.hot_water_images ? Array.from(property.hot_water_images) : undefined,
       },
       {
         key: 'ac',
@@ -2731,6 +2785,7 @@ function ManualTab({
         body:
           localize(property.amenities_info, language) ||
           t('manual.ac_desc', 'The remote is in the living room drawer. Press MODE to switch between Cool and Heat; we recommend 24°C overnight.'),
+        images: property.ac_images ? Array.from(property.ac_images) : undefined,
       },
       {
         key: 'linens',
@@ -2769,6 +2824,7 @@ function ManualTab({
       title: d.title,
       icon: d.icon,
       body: d.body,
+      images: d.images,
     }));
 
     const extra = property.manual_items && property.manual_items.length > 0 ? property.manual_items : [];
@@ -2776,19 +2832,50 @@ function ManualTab({
   }, [property, language, t]);
 
   return (
-    <motion.div variants={listStagger} initial="hidden" animate="show" className="flex flex-col gap-2.5 px-5 pb-4 pt-6">
-      {manualItems.map((item) => (
-        <motion.div key={item.key} variants={listItem}>
-          <ManualAccordionRow
-            item={item}
-            property={property}
-            expanded={expandedKey === item.key}
-            onToggle={() => onExpandedKeyChange(expandedKey === item.key ? null : item.key)}
-            onOpenWifi={onOpenWifi}
-          />
-        </motion.div>
-      ))}
-    </motion.div>
+    <>
+      <motion.div variants={listStagger} initial="hidden" animate="show" className="flex flex-col gap-2.5 px-5 pb-4 pt-6">
+        {manualItems.map((item) => (
+          <motion.div key={item.key} variants={listItem}>
+            <ManualAccordionRow
+              item={item}
+              property={property}
+              expanded={expandedKey === item.key}
+              onToggle={() => onExpandedKeyChange(expandedKey === item.key ? null : item.key)}
+              onOpenWifi={onOpenWifi}
+              onImageClick={(url) => setSelectedPhoto(url)}
+            />
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* Modal Προβολής Φωτογραφίας σε Πλήρες Μέγεθος */}
+      <AnimatePresence>
+        {selectedPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedPhoto(null)}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+          >
+            <div className="relative max-h-[90vh] max-w-lg overflow-hidden rounded-2xl bg-black" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => setSelectedPhoto(null)}
+                className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <img
+                src={selectedPhoto}
+                alt="Instruction detail"
+                className="max-h-[85vh] w-auto rounded-2xl object-contain"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
