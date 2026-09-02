@@ -31,6 +31,10 @@ import {
 const TURQUOISE = '#00A896';
 const EMERALD = '#10B981';
 
+// The ONLY property slug the hero mockup is ever allowed to display.
+// Never derived from an unfiltered query — always this literal.
+const DEMO_SLUG = 'demo-luxury-suite';
+
 const ROTATING_PHRASES = [
   'εξοικονομεί χρόνο στους οικοδεσπότες.',
   'μηδενίζει τις επαναλαμβανόμενες ερωτήσεις.',
@@ -89,7 +93,7 @@ function FloatingPill({
         scale: { duration: 0.6, delay },
         y: { duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: delay + 0.6 },
       }}
-      className={`absolute z-30 hidden items-center gap-2 rounded-2xl border border-white/60 bg-white/90 px-3.5 py-2.5 text-xs font-bold text-stone-800 shadow-xl shadow-stone-900/10 backdrop-blur-md sm:flex ${className}`}
+      className={`pointer-events-none absolute z-10 hidden items-center gap-2 rounded-2xl border border-white/60 bg-white/90 px-3.5 py-2.5 text-xs font-bold text-stone-800 shadow-xl shadow-stone-900/10 backdrop-blur-md sm:flex ${className}`}
     >
       <span
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white"
@@ -201,7 +205,9 @@ function NativeMockupScreen() {
 }
 
 export default function LandingPage() {
-  const [demoSlug, setDemoSlug] = useState<string | null>(null);
+  // The hero mockup must ONLY ever show this fixed demo property — never
+  // whichever row happens to come back first from the database (which
+  // could be a real host's personal apartment).
   const [demoStatus, setDemoStatus] = useState<'loading' | 'ready' | 'fallback'>('loading');
 
   useEffect(() => {
@@ -215,10 +221,16 @@ export default function LandingPage() {
 
     (async () => {
       try {
-        const { data, error } = await supabase.from('properties').select('slug').limit(1).single();
+        const { data, error } = await supabase
+          .from('properties')
+          .select('slug')
+          .eq('slug', DEMO_SLUG)
+          .single();
         if (cancelled) return;
-        if (!error && data?.slug) {
-          setDemoSlug(data.slug);
+        // Only flip to "ready" when the row we asked for actually came
+        // back — any other slug, missing row, or error always falls
+        // through to the safe, hardcoded demo route below.
+        if (!error && data?.slug === DEMO_SLUG) {
           setDemoStatus('ready');
         } else {
           setDemoStatus('fallback');
@@ -406,9 +418,12 @@ export default function LandingPage() {
             >
               <div className="absolute left-1/2 top-0 z-10 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-stone-900" />
               <div className="relative h-full w-full overflow-hidden rounded-[36px] bg-white">
-                {demoStatus === 'ready' && demoSlug ? (
+                {demoStatus === 'ready' ? (
                   <iframe
-                    src={`/${demoSlug}`}
+                    // Hardcoded literal — this must NEVER be built from a
+                    // dynamic/unfiltered query result, so it can never end
+                    // up pointing at a real host's personal property.
+                    src="/demo-luxury-suite"
                     title="Hostkey Live Demo Preview"
                     className="h-full w-full border-0"
                     loading="lazy"
@@ -419,14 +434,15 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            {/* Live demo badge */}
+            {/* Live demo badge — sits neatly above the notch, clear of the
+                screen header, always pointing at the fixed demo route */}
             <motion.a
-              href={demoStatus === 'ready' && demoSlug ? `/${demoSlug}` : '/login'}
-              target={demoStatus === 'ready' && demoSlug ? '_blank' : undefined}
+              href={`/${DEMO_SLUG}`}
+              target="_blank"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="absolute -top-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-white shadow-lg"
+              className="absolute -top-9 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold text-white shadow-lg"
               style={{
                 background: `linear-gradient(135deg, ${TURQUOISE}, ${EMERALD})`,
                 boxShadow: '0 10px 24px -8px rgba(0,168,150,0.5)',
@@ -436,24 +452,26 @@ export default function LandingPage() {
               <span>Δοκιμάστε το Live Demo!</span>
             </motion.a>
 
-            {/* Floating notification pills — positioned to clear the badge,
-                the phone bezel, and the two side preview cards */}
+            {/* Floating notification pills — pushed to the outer edges,
+                behind the phone frame (z-10 vs the phone's z-20) and
+                non-interactive, so they never sit over the screen or
+                block scrolling/taps on it */}
             <FloatingPill
               icon={Bell}
               label="Νέο check-in στις 15:00"
-              className="right-[-4%] top-9 sm:right-[0%] lg:right-[6%]"
+              className="-right-8 top-12 sm:-right-12 lg:-right-16"
               delay={0.7}
             />
             <FloatingPill
               icon={Wifi}
               label="Wi-Fi συνδέθηκε αυτόματα"
-              className="left-[-6%] top-[56%] sm:left-[-1%] lg:left-[7%]"
+              className="-left-8 top-1/2 -translate-y-1/2 sm:-left-12 lg:-left-16"
               delay={0.9}
             />
             <FloatingPill
               icon={CheckCircle2}
               label="Ο επισκέπτης διάβασε τις οδηγίες A/C"
-              className="right-[-8%] bottom-10 sm:right-[-2%] lg:right-[5%]"
+              className="-right-8 bottom-14 sm:-right-12 lg:-right-16"
               delay={1.1}
             />
           </div>
