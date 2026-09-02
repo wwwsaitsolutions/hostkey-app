@@ -84,18 +84,8 @@ import { useBeachWeather } from '@/lib/useBeachWeather';
 /*  Types — align these with your Supabase schema                     */
 /* ------------------------------------------------------------------ */
 
-/** A text field that may be a plain string, or a per-language map such as
- * `{ en: '...', el: '...', fr: '...' }`, sourced straight from Supabase. */
 export type LocalizedText = string | Partial<Record<string, string>> | null | undefined;
 
-/** Resolves a LocalizedText value strictly for the active language — no
- * silent English fallback baked in. A per-language map returns only that
- * language's entry (or '' if absent); a plain legacy string is honored only
- * when the active language is English, otherwise it returns ''. This is
- * deliberate: every call site is expected to chain `localize(...) ||
- * t('some.key', 'English default')`, so when Supabase has nothing for the
- * current language, the app's own translation dictionary — not raw English
- * database text — supplies the non-English fallback. */
 function localize(field: LocalizedText, language: string): string {
   if (field == null) return '';
   if (typeof field === 'object' && !Array.isArray(field)) {
@@ -104,12 +94,6 @@ function localize(field: LocalizedText, language: string): string {
   return language === 'en' ? String(field) : '';
 }
 
-/** UI-chrome translation hook — wraps `useLanguage()`'s `t(key)` with a safe
- * fallback: if the key is missing (or the translation function returns the
- * key itself, a common i18n-library convention for "not found"), the given
- * English fallback string is used instead. This is strictly for static UI
- * strings (titles, buttons, labels); dynamic Supabase content always goes
- * through `localize()` above. */
 function useT(): (key: string, fallback: string) => string {
   const { t } = useLanguage();
   return useCallback(
@@ -152,24 +136,25 @@ export interface ManualItem {
   title: string;
   icon: ManualIconKey;
   body: string | string[];
+  images?: string[];
 }
 
 export interface Property {
   id: string;
   name: string;
   cover_image?: string | null;
-  hero_image_url?: string | null; // legacy alias for cover_image
-  logo_url?: string | null; // used as host avatar fallback
+  hero_image_url?: string | null;
+  logo_url?: string | null;
   host_name?: string | null;
   host_avatar_url?: string | null;
   host_phone?: string | null;
   host_email?: string | null;
-  reception_phone?: string | null; // legacy alias for host_phone
+  reception_phone?: string | null;
   whatsapp_number?: string | null;
-  host_whatsapp?: string | null; // legacy alias for whatsapp_number
+  host_whatsapp?: string | null;
   check_in_time?: string | null;
   check_out_time?: string | null;
-  checkout_time?: string | null; // legacy alias for check_out_time
+  checkout_time?: string | null;
   wifi_ssid?: string | null;
   wifi_password?: string | null;
   address?: string | null;
@@ -177,14 +162,14 @@ export interface Property {
   lng?: number | null;
   checkin_steps?: string[] | null;
   checkout_steps?: string[] | null;
-  manual_items?: ManualItem[] | null; // extra custom items appended after the standard manual
+  manual_items?: ManualItem[] | null;
   emergency_contacts?: EmergencyContact[] | null;
   pharmacy_finder_url?: string | null;
   pharmacy_phone?: string | null;
   trash_maps_url?: string | null;
 
   // --- Home & Arrival ---
-  keysafe_code?: string | null; // smart lock / key safe access code
+  keysafe_code?: string | null;
   building_access?: LocalizedText;
   elevator_info?: LocalizedText;
   parking_info?: LocalizedText;
@@ -194,33 +179,38 @@ export interface Property {
   // --- Apartment manual ---
   tv_streaming_info?: LocalizedText;
   coffee_supplies_info?: LocalizedText;
-  kitchen_appliances_info?: LocalizedText; // stove / oven / microwave
+  kitchen_appliances_info?: LocalizedText;
   laundry_info?: LocalizedText;
   dishwasher_info?: LocalizedText;
-  hot_water_info?: LocalizedText; // solar boiler
-  amenities_info?: LocalizedText; // AC / heating
+  hot_water_info?: LocalizedText;
+  amenities_info?: LocalizedText;
   linens_towels_info?: LocalizedText;
+
+  // --- Appliance Photos ---
+  tv_images?: string[] | null;
+  laundry_images?: string[] | null;
+  dishwasher_images?: string[] | null;
+  hot_water_images?: string[] | null;
+  ac_images?: string[] | null;
+
   trash_info?: LocalizedText;
   house_rules?: LocalizedText;
-  tap_water_info?: LocalizedText; // is tap water drinkable
-  plumbing_rules?: LocalizedText; // toilet paper / septic system rules
-  sockets_appliances_info?: LocalizedText; // voltage, plug type, iron & hairdryer location
+  tap_water_info?: LocalizedText;
+  plumbing_rules?: LocalizedText;
+  sockets_appliances_info?: LocalizedText;
 
-  // --- Explore: practical info tiles ---
+  // --- Explore ---
   luggage_storage_info?: LocalizedText;
   bus_transport_info?: LocalizedText;
   taxi_station_info?: LocalizedText;
   taxi_phone?: string | null;
-  rentals_booking_url?: string | null; // e.g. car / moto / airport transfer booking link
-  car_rentals_info?: LocalizedText; // car rental partner info / special offer copy
-  car_rentals_booking_url?: string | null; // dedicated car rental booking link
-  transfers_info?: LocalizedText; // airport & port transfer info
+  rentals_booking_url?: string | null;
+  car_rentals_info?: LocalizedText;
+  car_rentals_booking_url?: string | null;
+  transfers_info?: LocalizedText;
 
-  // --- Support & safety ---
   first_aid_location?: LocalizedText;
-
-  // --- Reviews ---
-  google_review_url?: string | null; // link to the property's Google Business Profile review form
+  google_review_url?: string | null;
 }
 
 export type PlaceCategory = 'beaches' | 'groceries' | 'food' | 'nightlife' | 'gyms' | 'culture' | 'activities' | 'rentals' | 'excursions';
@@ -246,12 +236,11 @@ export interface Place {
 interface DashboardGridProps {
   property: Property;
   places: Place[];
-  /** Optional hook for a real AI concierge chat surface — falls back to a toast if omitted. */
   onOpenAIChat?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
-/*  Brand tokens                                                       */
+/*  Brand tokens                                                      */
 /* ------------------------------------------------------------------ */
 
 const TURQUOISE = '#00A896';
@@ -262,7 +251,7 @@ const DIRECTIONS_SHADOW = 'shadow-[#0077B6]/30';
 const TAP_SPRING = { type: 'spring' as const, stiffness: 420, damping: 18 };
 
 /* ------------------------------------------------------------------ */
-/*  Static config                                                      */
+/*  Static config                                                     */
 /* ------------------------------------------------------------------ */
 
 type Tab = 'home' | 'manual' | 'explore' | 'support';
@@ -451,7 +440,7 @@ const DEFAULT_DEPARTURE_CHECKLIST: { key: string; fallback: string }[] = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Animation variants                                                 */
+/*  Animation variants                                                */
 /* ------------------------------------------------------------------ */
 
 const tabVariants: Variants = {
@@ -477,7 +466,7 @@ const listItem: Variants = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Utilities                                                          */
+/*  Utilities                                                         */
 /* ------------------------------------------------------------------ */
 
 function digitsOnly(value: string): string {
@@ -510,9 +499,6 @@ function nearbyMapsHref(query: string, property: Property): string {
   return `https://www.google.com/maps/search/?api=1&query=${search}`;
 }
 
-/** Guarantees an external booking/profile URL actually has a protocol, so a
- * value saved in the admin panel as e.g. "www.rentacar.gr/book" still opens
- * correctly in a new tab instead of being treated as a relative path. */
 function normalizeExternalUrl(url: string): string {
   const trimmed = url.trim();
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
@@ -573,14 +559,6 @@ function IconSquircle({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Rich 3D-style illustrated scene badges — hand-built, multi-layer   */
-/*  inline SVG (gradients + shadows + highlights) animated purely via  */
-/*  Framer Motion transforms. No lottie/external images/fonts, so      */
-/*  nothing is ever fetched, blocked, or 404s — renders instantly.     */
-/* ------------------------------------------------------------------ */
-
-/** Concentric radar-style rings pulsing outward from a Wi-Fi squircle. */
 function WifiPulse({ children }: { children: ReactNode }) {
   return (
     <div className="relative inline-flex shrink-0">
@@ -600,10 +578,6 @@ function WifiPulse({ children }: { children: ReactNode }) {
   );
 }
 
-/* ---------- Home tab: check-in / check-out hero illustrations ------- */
-
-/** A vibrant leather-toned suitcase with travel tags and a glowing,
- * pulsing brass welcome key — full-width hero art for the check-in card. */
 function CheckInScene({ className = 'h-16 w-full' }: { className?: string }) {
   const id = useId();
   return (
@@ -625,8 +599,6 @@ function CheckInScene({ className = 'h-16 w-full' }: { className?: string }) {
       </defs>
 
       <ellipse cx="42" cy="54" rx="26" ry="4" fill="#0C4A3E" opacity="0.14" />
-
-      {/* suitcase body */}
       <rect x="20" y="22" width="44" height="30" rx="7" fill={`url(#${id}-bag)`} stroke="#01585F" strokeWidth="1.2" />
       <rect x="20" y="22" width="44" height="11" rx="6" fill="white" opacity="0.14" />
       <path d="M34 22 V15 Q34 10 40 10 H44 Q50 10 50 15 V22" stroke="#01585F" strokeWidth="2.6" strokeLinecap="round" fill="none" />
@@ -635,13 +607,11 @@ function CheckInScene({ className = 'h-16 w-full' }: { className?: string }) {
       <circle cx="28" cy="53" r="2.6" fill="#0C2B2E" />
       <circle cx="56" cy="53" r="2.6" fill="#0C2B2E" />
 
-      {/* travel tag */}
       <g transform="rotate(20 62 26)">
         <path d="M62 24 L70 24 L73 28 L70 32 L62 32 Z" fill="#FFD873" stroke="#B8791E" strokeWidth="1" />
         <circle cx="65" cy="28" r="1.1" fill="#B8791E" />
       </g>
 
-      {/* glowing brass welcome key */}
       <motion.circle
         cx="90"
         cy="24"
@@ -658,8 +628,6 @@ function CheckInScene({ className = 'h-16 w-full' }: { className?: string }) {
   );
 }
 
-/** A wall clock with hands set to departure time and a packed suitcase
- * ready to roll — hero art for the check-out card. */
 function CheckOutScene({ className = 'h-16 w-full' }: { className?: string }) {
   const id = useId();
   return (
@@ -676,8 +644,6 @@ function CheckOutScene({ className = 'h-16 w-full' }: { className?: string }) {
       </defs>
 
       <ellipse cx="70" cy="54" rx="28" ry="4" fill="#7C2D12" opacity="0.12" />
-
-      {/* wall clock, hands set just before checkout */}
       <circle cx="30" cy="26" r="18" fill={`url(#${id}-clock)`} stroke="#B93E2A" strokeWidth="1.2" />
       <circle cx="30" cy="26" r="14" fill="white" opacity="0.16" />
       <circle cx="30" cy="26" r="1.6" fill="white" />
@@ -685,7 +651,6 @@ function CheckOutScene({ className = 'h-16 w-full' }: { className?: string }) {
       <line x1="30" y1="26" x2="22" y2="24" stroke="white" strokeWidth="2" strokeLinecap="round" />
       <circle cx="30" cy="8" r="1.4" fill="#B93E2A" />
 
-      {/* packed suitcase, ready to go */}
       <rect x="72" y="26" width="38" height="26" rx="6" fill={`url(#${id}-bag)`} stroke="#8A4A0A" strokeWidth="1.1" />
       <rect x="72" y="26" width="38" height="9" rx="5" fill="white" opacity="0.14" />
       <path d="M84 26 V20 Q84 16 89 16 H93 Q98 16 98 20 V26" stroke="#8A4A0A" strokeWidth="2.4" strokeLinecap="round" fill="none" />
@@ -699,10 +664,6 @@ function CheckOutScene({ className = 'h-16 w-full' }: { className?: string }) {
   );
 }
 
-/** Cozy stylized Mediterranean boutique apartment at dusk — whitewashed
- * Cycladic walls, a domed blue roof accent, arched glowing windows,
- * bougainvillea, string lights and a palm silhouette. Used as the hero
- * fallback illustration whenever no cover photo is set. */
 function ApartmentHeroScene({ className = 'h-full w-full' }: { className?: string }) {
   const id = useId();
   return (
@@ -739,21 +700,17 @@ function ApartmentHeroScene({ className = 'h-full w-full' }: { className?: strin
         </linearGradient>
       </defs>
 
-      {/* dusk sky + sun */}
       <rect x="0" y="0" width="480" height="320" fill={`url(#${id}-sky)`} />
       <circle cx="360" cy="90" r="46" fill="#FFE6A8" opacity="0.85" />
       <circle cx="360" cy="90" r="70" fill="#FFD37A" opacity="0.18" />
 
-      {/* sea + horizon */}
       <rect x="0" y="196" width="480" height="124" fill={`url(#${id}-sea)`} />
       <path d="M0 196 Q120 188 240 196 T480 196 V206 Q360 198 240 206 T0 206 Z" fill="#0E7C86" opacity="0.5" />
       <path d="M0 214 Q120 206 240 214 T480 214" stroke="#EAF6FF" strokeOpacity="0.18" strokeWidth="3" fill="none" />
       <path d="M0 232 Q120 224 240 232 T480 232" stroke="#EAF6FF" strokeOpacity="0.14" strokeWidth="3" fill="none" />
 
-      {/* distant hillside */}
       <path d="M0 210 Q90 178 200 200 Q300 220 480 188 V210 H0 Z" fill="#3D2F63" opacity="0.55" />
 
-      {/* palm tree, left */}
       <path d="M46 260 Q42 210 52 176" stroke="#3B2A22" strokeWidth="5" strokeLinecap="round" fill="none" />
       <g stroke="#0F7B5C" strokeWidth="7" strokeLinecap="round">
         <path d="M52 176 Q28 160 12 168" />
@@ -763,7 +720,6 @@ function ApartmentHeroScene({ className = 'h-full w-full' }: { className?: strin
         <path d="M52 176 Q52 152 46 138" />
       </g>
 
-      {/* boutique building, right block (domed roof) */}
       <rect x="252" y="150" width="120" height="110" rx="6" fill={`url(#${id}-wall2)`} stroke="#C9BB9C" strokeWidth="1.5" />
       <path d="M252 150 Q312 118 372 150 Z" fill={`url(#${id}-dome)`} stroke="#0A5C8A" strokeWidth="1.5" />
       <circle cx="312" cy="128" r="4" fill="#FFE6A8" />
@@ -774,11 +730,9 @@ function ApartmentHeroScene({ className = 'h-full w-full' }: { className?: strin
       <rect x="298" y="214" width="28" height="46" rx="4" fill="#1E7A94" opacity="0.9" />
       <rect x="300" y="216" width="24" height="20" rx="3" fill={`url(#${id}-glow)`} opacity="0.85" />
 
-      {/* boutique building, main block (foreground, whitewashed) */}
       <rect x="84" y="128" width="196" height="132" rx="8" fill={`url(#${id}-wall)`} stroke="#D8CBAE" strokeWidth="1.5" />
       <rect x="84" y="120" width="196" height="14" rx="4" fill="#F0E6D2" stroke="#D8CBAE" strokeWidth="1.2" />
 
-      {/* arched glowing windows */}
       <path d="M106 176 V158 Q106 148 116 148 Q126 148 126 158 V176 Z" fill={`url(#${id}-shutter)`} stroke="#0A5C8A" strokeWidth="1.4" />
       <path d="M109 176 V159 Q109 151 116 151 Q123 151 123 159 V176 Z" fill={`url(#${id}-glow)`} />
       <path d="M150 176 V158 Q150 148 160 148 Q170 148 170 158 V176 Z" fill={`url(#${id}-shutter)`} stroke="#0A5C8A" strokeWidth="1.4" />
@@ -788,7 +742,6 @@ function ApartmentHeroScene({ className = 'h-full w-full' }: { className?: strin
       <path d="M238 176 V158 Q238 148 248 148 Q258 148 258 158 V176 Z" fill={`url(#${id}-shutter)`} stroke="#0A5C8A" strokeWidth="1.4" />
       <path d="M241 176 V159 Q241 151 248 151 Q255 151 255 159 V176 Z" fill={`url(#${id}-glow)`} />
 
-      {/* balcony railing + door */}
       <rect x="96" y="192" width="172" height="4" fill="#0A5C8A" opacity="0.6" />
       {Array.from({ length: 15 }).map((_, i) => (
         <rect key={i} x={100 + i * 11} y={192} width="3" height="16" fill="#0A5C8A" opacity="0.5" />
@@ -797,7 +750,6 @@ function ApartmentHeroScene({ className = 'h-full w-full' }: { className?: strin
       <rect x="164" y="212" width="32" height="44" rx="3" fill="#1E7A94" opacity="0.85" />
       <circle cx="192" cy="234" r="1.8" fill="#FFE6A8" />
 
-      {/* potted bougainvillea + string lights */}
       <path d="M90 210 Q84 196 92 184 Q100 196 96 210" fill="#E0527A" opacity="0.9" />
       <path d="M96 210 Q102 198 96 186 Q108 196 104 210" fill="#F0759A" opacity="0.85" />
       <path d="M88 258 L96 210 H108 L112 258 Z" fill="#B45309" opacity="0.9" />
@@ -812,10 +764,6 @@ function ApartmentHeroScene({ className = 'h-full w-full' }: { className?: strin
   );
 }
 
-/* ---------- Explore tab: category mini-scene illustrations ---------- */
-
-/** Golden sand, a turquoise gradient sea with a gentle drifting swell,
- * and a striped beach umbrella. */
 function BeachesScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -855,8 +803,6 @@ function BeachesScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A kraft-paper bakery bag with a baguette and an apple peeking out —
- * for Bakery, Supermarket & Groceries. */
 function GroceriesScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -892,8 +838,6 @@ function GroceriesScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A gourmet plate, a lifted silver cloche, and crossed fork & knife
- * in warm Mediterranean tones. */
 function FoodScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -927,8 +871,6 @@ function FoodScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A glowing tropical cocktail with a citrus-slice garnish over a
- * moody berry-glow nightlife backdrop. */
 function NightlifeScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -971,7 +913,6 @@ function NightlifeScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A dumbbell over a shimmering swimming pool — for Gyms & Pools. */
 function GymScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -1007,8 +948,6 @@ function GymScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A Venetian-fortress-style tower — stone texture, crenellations,
- * and a flag — for Sights & Culture. */
 function CultureScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -1039,7 +978,6 @@ function CultureScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** Layered mountain peaks, pine trees, a dashed trail, and a compass. */
 function ActivitiesScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -1070,7 +1008,6 @@ function ActivitiesScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A vibrant modern compact rental car on a sunny road. */
 function RentalsScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -1104,8 +1041,6 @@ function RentalsScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A warm sun-lit compass over layered island hills — for full-day
- * excursions & island-hopping escapes (Samaria, Balos, Santorini, …). */
 function ExcursionsScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -1144,7 +1079,6 @@ function ExcursionsScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A packed suitcase behind a glowing padlock badge — luggage storage & lockers. */
 function LuggageScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -1173,7 +1107,6 @@ function LuggageScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A friendly front-elevation bus — public buses / KTEL routes. */
 function BusScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -1206,7 +1139,6 @@ function BusScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A checkered-roof taxi cab, side profile — taxi ranks & radiotaxi. */
 function TaxiScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -1242,7 +1174,6 @@ function TaxiScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/** A friendly 3D concierge bust wearing a headset — direct host support badge. */
 function ConciergeScene({ className = 'h-14 w-14' }: { className?: string }) {
   const id = useId();
   return (
@@ -1273,9 +1204,6 @@ function ConciergeScene({ className = 'h-14 w-14' }: { className?: string }) {
   );
 }
 
-/* ---------- Support tab: emergency + pharmacy badge illustrations --- */
-
-/** A bright flashing European-emergency beacon with a red/blue aura. */
 function SirenScene({ className = 'h-6 w-6' }: { className?: string }) {
   const id = useId();
   return (
@@ -1314,7 +1242,6 @@ function SirenScene({ className = 'h-6 w-6' }: { className?: string }) {
   );
 }
 
-/** A gold shield badge with a blue police-cruiser accent and star. */
 function PoliceScene({ className = 'h-6 w-6' }: { className?: string }) {
   const id = useId();
   return (
@@ -1336,7 +1263,6 @@ function PoliceScene({ className = 'h-6 w-6' }: { className?: string }) {
   );
 }
 
-/** A boxy medical ambulance with a red cross and a flashing roof light. */
 function AmbulanceScene({ className = 'h-6 w-6' }: { className?: string }) {
   const id = useId();
   return (
@@ -1370,7 +1296,6 @@ function AmbulanceScene({ className = 'h-6 w-6' }: { className?: string }) {
   );
 }
 
-/** A red fire engine with a ladder line and a splash of extinguishing water. */
 function FireScene({ className = 'h-6 w-6' }: { className?: string }) {
   const id = useId();
   return (
@@ -1398,7 +1323,6 @@ function FireScene({ className = 'h-6 w-6' }: { className?: string }) {
   );
 }
 
-/** A glowing green medical cross with a two-tone capsule. */
 function PharmacyScene({ className = 'h-6 w-6' }: { className?: string }) {
   const id = useId();
   return (
@@ -1423,8 +1347,6 @@ function PharmacyScene({ className = 'h-6 w-6' }: { className?: string }) {
   );
 }
 
-/** A white first-aid kit box with a bold red cross — for the in-house
- * first-aid location card. */
 function FirstAidScene({ className = 'h-6 w-6' }: { className?: string }) {
   const id = useId();
   return (
@@ -1443,8 +1365,6 @@ function FirstAidScene({ className = 'h-6 w-6' }: { className?: string }) {
   );
 }
 
-/** Squircle badge wrapper for the illustrated scene badges — same gradient
- * / sheen / shadow treatment as IconSquircle, hosting a rich Scene inside. */
 function IllustratedSquircle({
   scene: Scene,
   tone,
@@ -1469,7 +1389,7 @@ function IllustratedSquircle({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Toast notifications                                                */
+/*  Toast notifications                                               */
 /* ------------------------------------------------------------------ */
 
 interface ToastMessage {
@@ -1500,7 +1420,7 @@ function ToastStack({ toasts }: { toasts: ToastMessage[] }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Rating + wind badges                                               */
+/*  Rating + wind badges                                              */
 /* ------------------------------------------------------------------ */
 
 function RatingBadge({ value }: { value: number }) {
@@ -1538,7 +1458,7 @@ function WindBadge({ status, note, compact = false }: { status: 'sheltered' | 'e
 }
 
 /* ------------------------------------------------------------------ */
-/*  Live weather — powered by useBeachWeather(), fully defensive        */
+/*  Live weather                                                      */
 /* ------------------------------------------------------------------ */
 
 interface ForecastDay {
@@ -1564,10 +1484,6 @@ function conditionIcon(condition?: string) {
   return Sun;
 }
 
-/** Home-tab weather widget: current temperature + conditions, plus a
- * horizontally-scrollable 5-day forecast preview when the hook provides one.
- * Every field is optional-chained, so it degrades gracefully to a compact
- * wind-only strip (or nothing) if only wind data — or no data — is available. */
 function WeatherWidget() {
   const weather = (useBeachWeather?.() ?? {}) as BeachWeatherShape;
 
@@ -1623,8 +1539,6 @@ function WeatherWidget() {
   );
 }
 
-/** Explore ▸ Beaches strip: live wind speed/direction, used to justify the
- * sheltered/exposed badges on nearby beach cards. */
 function LiveWindStrip() {
   const weather = (useBeachWeather?.() ?? {}) as BeachWeatherShape;
 
@@ -1651,7 +1565,7 @@ function LiveWindStrip() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Place card — Explore step 2                                        */
+/*  Place card                                                        */
 /* ------------------------------------------------------------------ */
 
 function PlaceCard({ place, language, onOpenDetails }: { place: Place; language: string; onOpenDetails: () => void }) {
@@ -1720,7 +1634,7 @@ function PlaceCard({ place, language, onOpenDetails }: { place: Place; language:
 }
 
 /* ------------------------------------------------------------------ */
-/*  Place detail drawer                                                */
+/*  Place detail drawer                                               */
 /* ------------------------------------------------------------------ */
 
 function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | null; language: string; onOpenChange: (open: boolean) => void }) {
@@ -1801,7 +1715,7 @@ function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | n
 }
 
 /* ------------------------------------------------------------------ */
-/*  Wi-Fi mock QR                                                      */
+/*  Wi-Fi mock QR                                                     */
 /* ------------------------------------------------------------------ */
 
 function WifiQRMock({ seed }: { seed: string }) {
@@ -1834,7 +1748,7 @@ function WifiQRMock({ seed }: { seed: string }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Wi-Fi drawer — copy + toast + QR modal                             */
+/*  Wi-Fi drawer                                                      */
 /* ------------------------------------------------------------------ */
 
 function WifiDrawer({
@@ -1856,7 +1770,7 @@ function WifiDrawer({
       await navigator.clipboard.writeText(value);
       onToast(toastText);
     } catch {
-      // clipboard unavailable — fail silently
+      // clipboard unavailable
     }
   };
 
@@ -1944,7 +1858,6 @@ function WifiDrawer({
         </Drawer.Portal>
       </Drawer.Root>
 
-      {/* QR code modal */}
       <Drawer.Root open={qrOpen} onOpenChange={setQrOpen}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-[70] bg-stone-900/50 backdrop-blur-sm" />
@@ -1954,7 +1867,7 @@ function WifiDrawer({
               <Drawer.Title className="text-base font-semibold text-stone-900">{t('wifi.scan_title', 'Scan to Join Wi-Fi')}</Drawer.Title>
               <WifiQRMock seed={`${property.wifi_ssid}:${property.wifi_password ?? ''}`} />
               <p className="text-center text-xs leading-relaxed text-stone-500">
-                Preview only — connect a real generator (e.g. <code>qrcode.react</code>) against a
+                Preview only — connect a real generator against a
                 <code> WIFI:S:{'{ssid}'};T:WPA;P:{'{password}'};; </code>
                 string for a scannable code.
               </p>
@@ -1977,7 +1890,7 @@ function WifiDrawer({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Check-in / Check-out drawer                                        */
+/*  Check-in / Check-out drawer                                       */
 /* ------------------------------------------------------------------ */
 
 function CheckInOutDrawer({
@@ -2076,7 +1989,7 @@ function CheckInOutDrawer({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Get Help drawer                                                    */
+/*  Get Help drawer                                                   */
 /* ------------------------------------------------------------------ */
 
 function GetHelpDrawer({
@@ -2215,7 +2128,7 @@ function GetHelpDrawer({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Floating "Get Help" bubble                                         */
+/*  Floating "Get Help" bubble                                        */
 /* ------------------------------------------------------------------ */
 
 function FloatingHelpButton({ onPress }: { onPress: () => void }) {
@@ -2244,7 +2157,7 @@ function FloatingHelpButton({ onPress }: { onPress: () => void }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Language switcher                                                  */
+/*  Language switcher                                                 */
 /* ------------------------------------------------------------------ */
 
 const DEFAULT_LANGUAGES = [
@@ -2307,12 +2220,9 @@ function LanguageSwitcher({ variant = 'onImage' }: { variant?: 'onImage' | 'onLi
 }
 
 /* ------------------------------------------------------------------ */
-/*  Home tab: Fast Arrival cards                                       */
+/*  Home tab: Fast Arrival cards                                      */
 /* ------------------------------------------------------------------ */
 
-/** 🔑 Smart Lock / Key Safe code — blurred by default, tap the eye to
- * reveal, tap copy to send it to the clipboard. Hidden entirely if the
- * property has no code on file. */
 function KeySafeCard({ code, onToast }: { code?: string | null; onToast: (text: string) => void }) {
   const t = useT();
   const [revealed, setRevealed] = useState(false);
@@ -2323,7 +2233,7 @@ function KeySafeCard({ code, onToast }: { code?: string | null; onToast: (text: 
       await navigator.clipboard.writeText(code);
       onToast(t('home.code_copied', 'Code copied to clipboard'));
     } catch {
-      // clipboard unavailable — fail silently
+      // clipboard unavailable
     }
   };
 
@@ -2360,8 +2270,6 @@ function KeySafeCard({ code, onToast }: { code?: string | null; onToast: (text: 
   );
 }
 
-/** Generic Fast Arrival info card — icon, title, body copy, and an optional
- * outbound action button (e.g. a maps link). */
 function ArrivalInfoCard({
   icon,
   tone,
@@ -2406,7 +2314,7 @@ function ArrivalInfoCard({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Hero (Home & Arrival tab)                                          */
+/*  Hero (Home & Arrival tab)                                         */
 /* ------------------------------------------------------------------ */
 
 function HeroHeader({
@@ -2431,7 +2339,7 @@ function HeroHeader({
       await navigator.clipboard.writeText(property.address);
       onToast(t('home.address_copied', 'Address copied to clipboard'));
     } catch {
-      // clipboard unavailable — fail silently
+      // clipboard unavailable
     }
   };
 
@@ -2614,8 +2522,6 @@ function HeroHeader({
   );
 }
 
-/* ---------- Departure checklist (interactive) ------------------------ */
-
 function DepartureChecklistCard() {
   const t = useT();
   const [checked, setChecked] = useState<boolean[]>(() => DEFAULT_DEPARTURE_CHECKLIST.map(() => false));
@@ -2691,8 +2597,6 @@ function DepartureChecklistCard() {
   );
 }
 
-/* ---------- Save to Home Screen (PWA) banner -------------------------- */
-
 function AddToHomeScreenBanner() {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -2750,7 +2654,7 @@ function AddToHomeScreenBanner() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Apartment Manual tab                                               */
+/*  Apartment Manual tab                                              */
 /* ------------------------------------------------------------------ */
 
 function ManualAccordionRow({
@@ -2822,6 +2726,30 @@ function ManualAccordionRow({
                 <p className="text-sm leading-relaxed text-stone-600">{bodyLines[0]}</p>
               )}
 
+              {/* Εμφάνιση επεξηγηματικών φωτογραφιών συσκευής */}
+              {item.images && item.images.length > 0 && (
+                <div className="mt-3.5 grid grid-cols-2 gap-2.5">
+                  {item.images.map((src, i) => (
+                    <a
+                      key={`${item.key}-img-${i}`}
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group relative block aspect-[4/3] w-full overflow-hidden rounded-xl border border-stone-200 bg-stone-100 shadow-sm"
+                    >
+                      <img
+                        src={src}
+                        alt={`${item.title} ${i + 1}`}
+                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      />
+                      <span className="absolute bottom-1.5 right-1.5 rounded-md bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white backdrop-blur-sm">
+                        🔍 Μεγέθυνση
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              )}
+
               {item.key === 'trash' && (
                 <motion.a
                   whileTap={{ scale: 0.97 }}
@@ -2848,6 +2776,7 @@ interface ManualFieldDef {
   icon: ManualIconKey;
   title: string;
   body: string;
+  images?: string[];
 }
 
 function ManualTab({
@@ -2912,6 +2841,7 @@ function ManualTab({
         body:
           localize(property.tv_streaming_info, language) ||
           t('manual.tv_desc', 'Smart TV with Netflix, YouTube. Turn on with the black remote, press Home for streaming apps.'),
+        images: property.tv_images || [],
       },
       {
         key: 'coffee',
@@ -2942,6 +2872,7 @@ function ManualTab({
             'manual.laundry_desc',
             'Washing machine is in the bathroom/closet. Detergent pods provided under the sink. We recommend Program 3 (Quick 30min).',
           ),
+        images: property.laundry_images || [],
       },
       {
         key: 'dishwasher',
@@ -2950,6 +2881,7 @@ function ManualTab({
         body:
           localize(property.dishwasher_info, language) ||
           t('manual.dishwasher_desc', 'Place one detergent tab in the dispenser and select Eco 50°C mode, then close door firmly to start.'),
+        images: property.dishwasher_images || [],
       },
       {
         key: 'water',
@@ -2961,6 +2893,7 @@ function ManualTab({
             'manual.water_desc',
             'Hot water is solar-heated during the day. If it runs low, flip the booster switch beside the bathroom door and wait 15 minutes.',
           ),
+        images: property.hot_water_images || [],
       },
       {
         key: 'ac',
@@ -2969,6 +2902,7 @@ function ManualTab({
         body:
           localize(property.amenities_info, language) ||
           t('manual.ac_desc', 'The remote is in the living room drawer. Press MODE to switch between Cool and Heat; we recommend 24°C overnight.'),
+        images: property.ac_images || [],
       },
       {
         key: 'linens',
@@ -3007,6 +2941,7 @@ function ManualTab({
       title: d.title,
       icon: d.icon,
       body: d.body,
+      images: d.images,
     }));
 
     const extra = property.manual_items && property.manual_items.length > 0 ? property.manual_items : [];
@@ -3031,7 +2966,7 @@ function ManualTab({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Explore tab — two-step drill-down                                  */
+/*  Explore tab — two-step drill-down                                 */
 /* ------------------------------------------------------------------ */
 
 type ExploreSelection = { kind: 'places'; key: PlaceCategory } | { kind: 'info'; key: InfoCategoryKey };
@@ -3096,7 +3031,6 @@ function ExploreTab({
 
   useEffect(() => {
     if (initialCategory) onDeepLinkConsumed();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const shelteredBeach = useMemo(() => places.find((p) => p.category === 'beaches' && p.wind_status === 'sheltered'), [places]);
@@ -3111,9 +3045,6 @@ function ExploreTab({
     return EXPLORE_TILES.find((t) => t.kind === selected.kind && t.key === selected.key) ?? null;
   }, [selected]);
 
-  // "Rentals & Transfers" is a hybrid category: alongside any user-added
-  // `places` rows, it always prioritizes these two property-level cards
-  // when the host has filled them in from the admin panel.
   const isRentalsCategory = selected?.kind === 'places' && selected.key === 'rentals';
   const hasCarRentalContent = Boolean(property.car_rentals_info || property.car_rentals_booking_url);
   const hasTransfersContent = Boolean(property.transfers_info);
@@ -3134,11 +3065,6 @@ function ExploreTab({
     : telHref(property.host_phone || property.reception_phone);
   const transferIsWhatsapp = Boolean(transferWhatsapp);
 
-  // Auto-detect a coupon/promo code inside the car-rental copy (e.g. "…
-  // coupon code - saitgr" or the Greek "κωδικός έκπτωσης: SAITGR"), scanning
-  // every localized variant of the field plus whatever body text is
-  // actually being shown so the badge appears regardless of which language
-  // the host wrote the code in.
   const carRentalCouponCode = useMemo(() => {
     if (!isRentalsCategory) return null;
     const raw = property.car_rentals_info;
@@ -3180,7 +3106,7 @@ function ExploreTab({
       if (couponCopyTimeoutRef.current) clearTimeout(couponCopyTimeoutRef.current);
       couponCopyTimeoutRef.current = setTimeout(() => setCouponCopied(false), 2000);
     } catch {
-      // clipboard unavailable — fail silently
+      // clipboard unavailable
     }
   };
 
@@ -3383,7 +3309,7 @@ function ExploreTab({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Support & Safety tab                                               */
+/*  Support & Safety tab                                              */
 /* ------------------------------------------------------------------ */
 
 function SupportServiceCard({
@@ -3441,8 +3367,6 @@ function SupportServiceCard({
   );
 }
 
-/** Full-width note card (no phone action) — used for the in-house first-aid
- * kit location. */
 function InfoNoteCard({
   scene,
   tone,
@@ -3469,7 +3393,6 @@ function InfoNoteCard({
   );
 }
 
-/** Full-width "Direct Host Support" card with Call / WhatsApp / Email actions. */
 function HostContactCard({ property }: { property: Property }) {
   const t = useT();
   const hostPhone = property.host_phone || property.reception_phone || '+306900000000';
@@ -3621,7 +3544,7 @@ function SupportTab({ property, language }: { property: Property; language: stri
 }
 
 /* ------------------------------------------------------------------ */
-/*  Bottom tab bar                                                     */
+/*  Bottom tab bar                                                    */
 /* ------------------------------------------------------------------ */
 
 function BottomTabBar({ active, onChange, t }: { active: Tab; onChange: (tab: Tab) => void; t: (key: string, fallback: string) => string }) {
@@ -3661,7 +3584,7 @@ function BottomTabBar({ active, onChange, t }: { active: Tab; onChange: (tab: Ta
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main export                                                        */
+/*  Main export                                                       */
 /* ------------------------------------------------------------------ */
 
 export default function DashboardGrid({ property, places, onOpenAIChat }: DashboardGridProps) {
@@ -3765,9 +3688,6 @@ export default function DashboardGrid({ property, places, onOpenAIChat }: Dashbo
   );
 }
 
-/** Home tab renders entirely inside HeroHeader (above the tab body), so the
- * animated tab-content slot just needs a zero-height placeholder to keep the
- * transition system uniform across all four tabs. */
 function HomeSpacer() {
   return <div className="h-1" />;
 }
