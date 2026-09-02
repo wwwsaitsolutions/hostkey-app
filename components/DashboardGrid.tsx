@@ -2953,22 +2953,22 @@ function ExploreTab({
   const hasTransfersContent = true;
   const rentalsHasPropertyContent = isRentalsCategory;
 
+  const defaultCarRentalsDesc = language === 'el'
+    ? 'Ειδική Προσφορά: Συμπληρώστε τον κωδικό κουπονιού - saitgr - στα σχόλια του αιτήματός σας. Αυτό σας ταυτοποιεί ως επισκέπτη μας, εξασφαλίζοντάς σας την καλύτερη δυνατή προσφορά και εξατομικευμένη εξυπηρέτηση.'
+    : 'Special Offer: Please include the coupon code - saitgr - in the comments of your request. This identifies you as our guest, ensuring you the best possible offer and personalized service.';
+
   const carRentalsBody = isRentalsCategory
-    ? localize(property.car_rentals_info, language) ||
-      t(
-        'explore.car_rentals_desc',
-        'Special Offer: Please include the coupon code - saitgr - in the comments of your request. This identifies you as our guest, ensuring you the best possible offer and personalized service.'
-      )
+    ? localize(property.car_rentals_info, language) || t('explore.car_rentals_desc', defaultCarRentalsDesc)
     : '';
 
   const carRentalBookingUrl = property.car_rentals_booking_url || property.rentals_booking_url || 'https://sevenrental.gr';
 
+  const defaultTransfersDesc = language === 'el'
+    ? 'Μπορούμε να κανονίσουμε επαγγελματική ιδιωτική μεταφορά απευθείας στο κατάλυμά μας:\n\n• Αεροδρόμιο Χανίων:\nStandard Ταξί (1-4 άτομα): 100€\nMinivan (έως 8 άτομα): 130€\n\n• Αεροδρόμιο Ηρακλείου:\nStandard Ταξί (1-4 άτομα): 110€\nMinivan (έως 8 άτομα): 140€\n\nΓια κράτηση, επικοινωνήστε με τον οικοδεσπότη αναφέροντας τα στοιχεία της πτήσης σας.'
+    : 'We can arrange professional private transportation directly to our accommodation:\n\n• Chania Airport:\nStandard Taxi (1-4 people): €100\nMinivan (up to 8 people): €130\n\n• Heraklion Airport:\nStandard Taxi (1-4 people): €110\nMinivan (up to 8 people): €140\n\nTo book, please contact host with your flight details.';
+
   const transfersBody = isRentalsCategory
-    ? localize(property.transfers_info, language) ||
-      t(
-        'explore.transfers_desc',
-        'Transfers from/to Airports (Chania or Heraklion)\n\nWe can arrange professional private transportation directly to our accommodation:\n\n• Chania Airport:\nStandard Taxi (1-4 people): €100\nMinivan (up to 8 people): €130\n\n• Heraklion Airport:\nStandard Taxi (1-4 people): €110\nMinivan (up to 8 people): €140\n\nTo book, please contact host with your flight details.'
-      )
+    ? localize(property.transfers_info, language) || t('explore.transfers_desc', defaultTransfersDesc)
     : '';
 
   const transferWhatsapp = property.host_whatsapp || property.whatsapp_number || property.host_phone || '+306900000000';
@@ -2976,11 +2976,13 @@ function ExploreTab({
 
   const transferWaHref = waHref(
     transferWhatsapp,
-    'Hi! I would like to book an airport/port transfer for my stay. Here are my flight details:\n• Flight Number:\n• Arrival Time:\n• Number of Passengers:'
+    language === 'el'
+      ? 'Γεια σας! Θα ήθελα να κανονίσω μεταφορά από/προς το αεροδρόμιο/λιμάνι. Στοιχεία πτήσης:\n• Αριθμός Πτήσης:\n• Ώρα Άφιξης:\n• Αριθμός Επιβατών:'
+      : 'Hi! I would like to book an airport/port transfer for my stay. Here are my flight details:\n• Flight Number:\n• Arrival Time:\n• Number of Passengers:'
   );
   const transferMailHref = mailHref(
     transferEmail,
-    'Airport / Port Transfer Request'
+    language === 'el' ? 'Αίτημα Μεταφοράς από/προς Αεροδρόμιο' : 'Airport / Port Transfer Request'
   );
 
   const carRentalCouponCode = useMemo(() => {
@@ -3193,7 +3195,10 @@ function ExploreTab({
                         <p className="text-sm font-bold text-stone-900">
                           {t('explore.transfers_title', 'Airport & Port Transfers')}
                         </p>
-                        <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-stone-600">{transfersBody}</p>
+                        <p className="mt-0.5 text-xs text-stone-500">
+                          {t('explore.transfers_subtitle', 'Transfers from/to Airports (Chania or Heraklion)')}
+                        </p>
+                        <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-stone-600">{transfersBody}</p>
                       </div>
                     </div>
 
@@ -3208,7 +3213,7 @@ function ExploreTab({
                         className="flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-50/50"
                       >
                         <MessageCircle className="h-4 w-4 text-emerald-600" />
-                        <span>Book via WhatsApp</span>
+                        <span>{t('explore.contact_whatsapp', 'Book via WhatsApp')}</span>
                       </motion.a>
 
                       <motion.a
@@ -3218,7 +3223,7 @@ function ExploreTab({
                         className="flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-sky-700 transition-colors hover:bg-sky-50/50"
                       >
                         <Mail className="h-4 w-4 text-sky-600" />
-                        <span>Email Host</span>
+                        <span>{t('explore.contact_email', 'Email Host')}</span>
                       </motion.a>
                     </div>
                   </div>
