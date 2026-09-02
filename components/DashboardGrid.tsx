@@ -2234,7 +2234,7 @@ function LanguageSwitcher({ variant = 'onImage' }: { variant?: 'onImage' | 'onLi
                   key={lang.code}
                   type="button"
                   onClick={() => {
-                    setLanguage?.(lang.code);
+                    setLanguage?.(lang.code as any);
                     setOpen(false);
                   }}
                   className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-medium transition-colors hover:bg-stone-50"
