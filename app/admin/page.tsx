@@ -828,20 +828,18 @@ export default function AdminPage() {
 
   const loadAdminStats = useCallback(async () => {
     setAdminStats((prev) => ({ ...prev, loading: true }));
-    const [{ count: propertiesCount, error: propertiesError }, { data: hostRows, error: hostsError }] = await Promise.all([
-      supabase.from('properties').select('*', { count: 'exact', head: true }),
-      supabase.from('properties').select('user_id'),
-    ]);
+    const { data: properties, error } = await supabase
+      .from('properties')
+      .select('id, user_id');
 
-    if (!propertiesError && !hostsError) {
-      const uniqueHosts = new Set(
-        ((hostRows as { user_id: string | null }[] | null) ?? [])
-          .map((row) => row.user_id)
-          .filter((id): id is string => Boolean(id))
-      );
+    if (!error) {
+      const allProps = properties ?? [];
+      const clientProperties = allProps.filter((p) => Boolean(p.user_id));
+      const uniqueHostIds = new Set(clientProperties.map((p) => p.user_id));
+
       setAdminStats({
-        totalProperties: propertiesCount ?? 0,
-        totalHosts: uniqueHosts.size,
+        totalProperties: clientProperties.length,
+        totalHosts: uniqueHostIds.size,
         loading: false,
       });
     } else {
