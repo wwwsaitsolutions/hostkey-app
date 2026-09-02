@@ -2872,10 +2872,6 @@ function ManualTab({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Explore tab — two-step drill-down                                 */
-/* ------------------------------------------------------------------ */
-
 type ExploreSelection = { kind: 'places'; key: PlaceCategory } | { kind: 'info'; key: InfoCategoryKey };
 
 function InfoCategoryDetail({ tile, property, language }: { tile: InfoCategoryConfig; property: Property; language: string }) {
@@ -2952,7 +2948,6 @@ function ExploreTab({
     return EXPLORE_TILES.find((t) => t.kind === selected.kind && t.key === selected.key) ?? null;
   }, [selected]);
 
-  // Εμφάνιση των καρτών Rentals & Transfers είτε από το κατάλυμα είτε με fallback στο demo
   const isRentalsCategory = selected?.kind === 'places' && selected.key === 'rentals';
   const hasCarRentalContent = true;
   const hasTransfersContent = true;
@@ -2972,18 +2967,26 @@ function ExploreTab({
     ? localize(property.transfers_info, language) ||
       t(
         'explore.transfers_desc',
-        'Transfers from/to Airports (Chania or Heraklion)\n\nWe can arrange professional private transportation directly to our accommodation:\n\n• Chania Airport:\nStandard Taxi (1-4 people): €100\nMinivan (up to 8 people): €130\n\n• Heraklion Airport:\nStandard Taxi (1-4 people): €110\nMinivan (up to 8 people): €140\n\nTo book, please send your flight number, arrival time and number of passengers to our host.'
+        'Transfers from/to Airports (Chania or Heraklion)\n\nWe can arrange professional private transportation directly to our accommodation:\n\n• Chania Airport:\nStandard Taxi (1-4 people): €100\nMinivan (up to 8 people): €130\n\n• Heraklion Airport:\nStandard Taxi (1-4 people): €110\nMinivan (up to 8 people): €140\n\nTo book, please contact host with your flight details.'
       )
     : '';
 
-  const transferWhatsapp = property.host_whatsapp || property.whatsapp_number;
-  const transferHref = transferWhatsapp
-    ? waHref(transferWhatsapp, `Hi! I'd like to arrange an airport/port transfer for my stay.`)
-    : telHref(property.host_phone || property.reception_phone);
-  const transferIsWhatsapp = Boolean(transferWhatsapp);
+  // Στοιχεία επικοινωνίας για τα transfers (με fallback στο τηλέφωνο/email οικοδεσπότη)
+  const transferWhatsapp = property.host_whatsapp || property.whatsapp_number || property.host_phone || '+306900000000';
+  const transferEmail = property.host_email || 'info@stayguide.gr';
 
+  const transferWaHref = waHref(
+    transferWhatsapp,
+    'Hi! I would like to book an airport/port transfer for my stay. Here are my flight details:\n• Flight Number:\n• Arrival Time:\n• Number of Passengers:'
+  );
+  const transferMailHref = mailHref(
+    transferEmail,
+    'Airport / Port Transfer Request'
+  );
+
+  // Κουπόνι ΠΑΝΤΑ με πεζά γράμματα (saitgr)
   const carRentalCouponCode = useMemo(() => {
-    if (!isRentalsCategory) return 'SAITGR';
+    if (!isRentalsCategory) return 'saitgr';
     const raw = property.car_rentals_info;
     const texts: string[] = [];
     if (typeof raw === 'string') texts.push(raw);
@@ -3001,9 +3004,9 @@ function ExploreTab({
       if (!labelMatch) continue;
       const rest = text.slice(labelMatch.index! + labelMatch[0].length);
       const tokenMatch = rest.match(tokenAfterMatch);
-      if (tokenMatch?.[1]) return tokenMatch[1].toUpperCase();
+      if (tokenMatch?.[1]) return tokenMatch[1].toLowerCase(); // <-- πεζά γράμματα
     }
-    return 'SAITGR';
+    return 'saitgr';
   }, [isRentalsCategory, property.car_rentals_info, carRentalsBody]);
 
   const [couponCopied, setCouponCopied] = useState(false);
@@ -3115,6 +3118,7 @@ function ExploreTab({
               <>
                 {selected.kind === 'places' && selected.key === 'beaches' && <LiveWindStrip />}
 
+                {/* Card 1: Car Rental with interactive coupon copy button */}
                 {isRentalsCategory && hasCarRentalContent && (
                   <div className="mb-3 overflow-hidden rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50 to-white shadow-sm shadow-stone-900/5">
                     <div className="flex items-start gap-3 p-4">
@@ -3177,6 +3181,7 @@ function ExploreTab({
                   </div>
                 )}
 
+                {/* Card 2: Airport & Port Transfers with WhatsApp & Email Actions */}
                 {isRentalsCategory && hasTransfersContent && (
                   <div className="mb-3 overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-br from-sky-50 to-white shadow-sm shadow-stone-900/5">
                     <div className="flex items-start gap-3 p-4">
@@ -3190,21 +3195,31 @@ function ExploreTab({
                         <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-stone-600">{transfersBody}</p>
                       </div>
                     </div>
-                    {transferHref && (
+
+                    {/* Action buttons: WhatsApp & Email */}
+                    <div className="grid grid-cols-2 divide-x divide-sky-100 border-t border-sky-100 bg-white/80">
                       <motion.a
                         whileTap={{ scale: 0.97 }}
                         transition={TAP_SPRING}
-                        href={transferHref}
-                        target={transferIsWhatsapp ? '_blank' : undefined}
-                        rel={transferIsWhatsapp ? 'noopener noreferrer' : undefined}
-                        className="flex items-center justify-center gap-2 border-t border-sky-100 bg-white/70 py-3 text-sm font-semibold text-sky-700 transition-colors hover:bg-white"
+                        href={transferWaHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-50/50"
                       >
-                        {transferIsWhatsapp ? <MessageCircle className="h-4 w-4" /> : <PhoneCall className="h-4 w-4" />}
-                        {transferIsWhatsapp
-                          ? t('explore.contact_whatsapp', 'Book via WhatsApp')
-                          : t('explore.contact_call', 'Call Host to Book')}
+                        <MessageCircle className="h-4 w-4 text-emerald-600" />
+                        <span>Book via WhatsApp</span>
                       </motion.a>
-                    )}
+
+                      <motion.a
+                        whileTap={{ scale: 0.97 }}
+                        transition={TAP_SPRING}
+                        href={transferMailHref}
+                        className="flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-sky-700 transition-colors hover:bg-sky-50/50"
+                      >
+                        <Mail className="h-4 w-4 text-sky-600" />
+                        <span>Email Host</span>
+                      </motion.a>
+                    </div>
                   </div>
                 )}
 
