@@ -3,6 +3,7 @@
 import { useEffect, useState, type ComponentType } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
 import {
   Sparkles,
   KeyRound,
@@ -51,15 +52,15 @@ function RotatingHeadline() {
   }, []);
 
   return (
-    <span className="relative mt-2 block h-[1.3em] overflow-hidden sm:h-[1.25em]">
+    <span className="mt-2 block w-full min-h-[1.3em] sm:min-h-[1.35em] lg:min-h-[1.3em]">
       <AnimatePresence mode="wait">
         <motion.span
           key={index}
-          initial={{ y: 24, opacity: 0 }}
+          initial={{ y: 18, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -24, opacity: 0 }}
+          exit={{ y: -18, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-          className="absolute inset-x-0 block bg-gradient-to-r from-[#00A896] to-emerald-500 bg-clip-text text-transparent"
+          className="block w-full whitespace-normal break-words bg-gradient-to-r from-[#00A896] to-emerald-500 bg-clip-text text-transparent"
         >
           {ROTATING_PHRASES[index]}
         </motion.span>
@@ -101,7 +102,138 @@ function FloatingPill({
   );
 }
 
+/**
+ * Native, hand-built preview screen shown inside the phone mockup.
+ * Always renders instantly (no network dependency) so the hero never
+ * shows a broken/404 iframe while a real property slug is loading
+ * or when none exists yet.
+ */
+function NativeMockupScreen() {
+  const navItems = [
+    { icon: Sparkles, label: 'Αρχική' },
+    { icon: BookOpen, label: 'Manual' },
+    { icon: Compass, label: 'Explore' },
+    { icon: MessageCircle, label: 'Support' },
+  ];
+
+  return (
+    <div className="flex h-full w-full flex-col overflow-hidden bg-[#F7F4EC]">
+      {/* cover photo */}
+      <div className="relative h-28 w-full shrink-0 overflow-hidden bg-gradient-to-br from-emerald-200 via-teal-100 to-amber-100">
+        <div
+          className="absolute inset-0 opacity-60"
+          style={{ background: 'radial-gradient(circle at 25% 20%, rgba(255,255,255,0.7), transparent 60%)' }}
+        />
+        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="absolute bottom-2 left-3 right-3">
+          <p className="text-[8px] font-bold uppercase tracking-wide text-white/90 drop-shadow">Boutique Suite</p>
+          <p className="text-sm font-black text-white drop-shadow">Villa Hostkey</p>
+        </div>
+      </div>
+
+      {/* content */}
+      <div className="flex-1 space-y-2.5 overflow-y-auto px-3 py-3">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between rounded-2xl px-3.5 py-3 text-left text-white shadow-md"
+          style={{ background: `linear-gradient(135deg, ${TURQUOISE}, ${EMERALD})` }}
+        >
+          <span className="flex items-center gap-2 text-[11px] font-bold">
+            <KeyRound className="h-3.5 w-3.5" />
+            Self Check-in
+          </span>
+          <span className="text-[9px] font-semibold opacity-90">Κωδικοί →</span>
+        </button>
+
+        <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
+          <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide text-stone-500">
+            <Wifi className="h-3 w-3 text-sky-500" />
+            <span>Wi-Fi Δίκτυο</span>
+          </div>
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-xs font-bold text-stone-900">Villa_Hostkey_5G</span>
+            <span className="rounded-full bg-stone-100 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-700">
+              sunset-2026
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { icon: BookOpen, label: 'Οδηγός Σπιτιού' },
+            { icon: Compass, label: 'Τοπικές Προτάσεις' },
+          ].map((c, i) => (
+            <div
+              key={i}
+              className="flex flex-col items-start gap-1.5 rounded-2xl border border-stone-200 bg-white p-2.5 shadow-sm"
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <c.icon className="h-3.5 w-3.5" />
+              </span>
+              <span className="text-[9px] font-bold leading-tight text-stone-800">{c.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
+          <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide text-stone-500">
+            <Sun className="h-3 w-3 text-amber-500" />
+            <span>Καιρός & Παραλίες</span>
+          </div>
+          <p className="mt-1 text-[10px] font-semibold text-stone-700">28°C • Απάνεμη ακτή σήμερα</p>
+        </div>
+      </div>
+
+      {/* bottom navigation */}
+      <div className="flex shrink-0 items-center justify-around border-t border-stone-200 bg-white/95 px-2 py-2.5 backdrop-blur">
+        {navItems.map((t, i) => (
+          <div
+            key={i}
+            className={`flex flex-col items-center gap-0.5 ${i === 0 ? 'text-emerald-600' : 'text-stone-400'}`}
+          >
+            <t.icon className="h-4 w-4" />
+            <span className="text-[7px] font-bold">{t.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
+  const [demoSlug, setDemoSlug] = useState<string | null>(null);
+  const [demoStatus, setDemoStatus] = useState<'loading' | 'ready' | 'fallback'>('loading');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // Safety timeout: never leave the phone waiting on a slow/failed
+    // request — fall back to the native mockup instead of a blank iframe.
+    const timeout = setTimeout(() => {
+      if (!cancelled) setDemoStatus((prev) => (prev === 'loading' ? 'fallback' : prev));
+    }, 3000);
+
+    (async () => {
+      try {
+        const { data, error } = await supabase.from('properties').select('slug').limit(1).single();
+        if (cancelled) return;
+        if (!error && data?.slug) {
+          setDemoSlug(data.slug);
+          setDemoStatus('ready');
+        } else {
+          setDemoStatus('fallback');
+        }
+      } catch {
+        if (!cancelled) setDemoStatus('fallback');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, []);
+
   const highlights = [
     { icon: KeyRound, label: 'Αυτόνομο Self Check-in & Κωδικοί' },
     { icon: Camera, label: 'Οδηγίες Συσκευών & Φωτογραφίες Manual' },
@@ -151,7 +283,7 @@ export default function LandingPage() {
           style={{ background: `radial-gradient(closest-side, ${TURQUOISE}, transparent)` }}
         />
 
-        <div className="mx-auto max-w-3xl text-center">
+        <div className="mx-auto max-w-4xl text-center">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -166,7 +298,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.05 }}
-            className="mt-6 text-4xl font-black tracking-tight text-stone-900 sm:text-6xl sm:leading-[1.12]"
+            className="mx-auto mt-6 w-full max-w-4xl whitespace-normal break-words text-3xl font-black leading-tight tracking-tight text-stone-900 sm:text-5xl sm:leading-[1.15] lg:text-6xl"
           >
             Ψηφιακός Οδηγός Επισκεπτών που
             <RotatingHeadline />
@@ -274,19 +406,23 @@ export default function LandingPage() {
             >
               <div className="absolute left-1/2 top-0 z-10 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-stone-900" />
               <div className="relative h-full w-full overflow-hidden rounded-[36px] bg-white">
-                <iframe
-                  src="/demo-luxury-suite"
-                  title="Hostkey Live Demo Preview"
-                  className="h-full w-full border-0"
-                  loading="lazy"
-                />
+                {demoStatus === 'ready' && demoSlug ? (
+                  <iframe
+                    src={`/${demoSlug}`}
+                    title="Hostkey Live Demo Preview"
+                    className="h-full w-full border-0"
+                    loading="lazy"
+                  />
+                ) : (
+                  <NativeMockupScreen />
+                )}
               </div>
             </motion.div>
 
             {/* Live demo badge */}
             <motion.a
-              href="/demo-luxury-suite"
-              target="_blank"
+              href={demoStatus === 'ready' && demoSlug ? `/${demoSlug}` : '/login'}
+              target={demoStatus === 'ready' && demoSlug ? '_blank' : undefined}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
@@ -300,23 +436,24 @@ export default function LandingPage() {
               <span>Δοκιμάστε το Live Demo!</span>
             </motion.a>
 
-            {/* Floating notification pills */}
+            {/* Floating notification pills — positioned to clear the badge,
+                the phone bezel, and the two side preview cards */}
             <FloatingPill
               icon={Bell}
               label="Νέο check-in στις 15:00"
-              className="left-[-8%] top-4 sm:left-[2%]"
+              className="right-[-4%] top-9 sm:right-[0%] lg:right-[6%]"
               delay={0.7}
             />
             <FloatingPill
               icon={Wifi}
               label="Wi-Fi συνδέθηκε αυτόματα"
-              className="right-[-6%] top-1/3 sm:right-[4%]"
+              className="left-[-6%] top-[56%] sm:left-[-1%] lg:left-[7%]"
               delay={0.9}
             />
             <FloatingPill
               icon={CheckCircle2}
               label="Ο επισκέπτης διάβασε τις οδηγίες A/C"
-              className="left-[-10%] bottom-8 sm:left-[0%]"
+              className="right-[-8%] bottom-10 sm:right-[-2%] lg:right-[5%]"
               delay={1.1}
             />
           </div>
