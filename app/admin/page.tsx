@@ -131,12 +131,17 @@ interface PropertyFormState {
   plumbing_rules: MultilingualValue;
   sockets_appliances_info: MultilingualValue;
   tv_streaming_info: MultilingualValue;
+  tv_images: string[];
   coffee_supplies_info: MultilingualValue;
   kitchen_appliances_info: MultilingualValue;
   laundry_info: MultilingualValue;
+  laundry_images: string[];
   dishwasher_info: MultilingualValue;
+  dishwasher_images: string[];
   hot_water_info: MultilingualValue;
+  hot_water_images: string[];
   amenities_info: MultilingualValue;
+  ac_images: string[];
   linens_towels_info: MultilingualValue;
   trash_info: MultilingualValue;
   trash_maps_url: string;
@@ -211,12 +216,17 @@ function emptyForm(): PropertyFormState {
     plumbing_rules: emptyMultilingual(),
     sockets_appliances_info: emptyMultilingual(),
     tv_streaming_info: emptyMultilingual(),
+    tv_images: [],
     coffee_supplies_info: emptyMultilingual(),
     kitchen_appliances_info: emptyMultilingual(),
     laundry_info: emptyMultilingual(),
+    laundry_images: [],
     dishwasher_info: emptyMultilingual(),
+    dishwasher_images: [],
     hot_water_info: emptyMultilingual(),
+    hot_water_images: [],
     amenities_info: emptyMultilingual(),
+    ac_images: [],
     linens_towels_info: emptyMultilingual(),
     trash_info: emptyMultilingual(),
     trash_maps_url: '',
@@ -310,6 +320,11 @@ function rowToForm(row: Record<string, unknown>): PropertyFormState {
     return '';
   };
 
+  const toArr = (arr: unknown): string[] => {
+    if (Array.isArray(arr)) return arr.map(String).filter(Boolean);
+    return [];
+  };
+
   return {
     id: (row.id as string) ?? null,
     name: str('name'),
@@ -339,12 +354,17 @@ function rowToForm(row: Record<string, unknown>): PropertyFormState {
     plumbing_rules: toMultilingual(row.plumbing_rules),
     sockets_appliances_info: toMultilingual(row.sockets_appliances_info),
     tv_streaming_info: toMultilingual(row.tv_streaming_info),
+    tv_images: toArr(row.tv_images),
     coffee_supplies_info: toMultilingual(row.coffee_supplies_info),
     kitchen_appliances_info: toMultilingual(row.kitchen_appliances_info),
     laundry_info: toMultilingual(row.laundry_info),
+    laundry_images: toArr(row.laundry_images),
     dishwasher_info: toMultilingual(row.dishwasher_info),
+    dishwasher_images: toArr(row.dishwasher_images),
     hot_water_info: toMultilingual(row.hot_water_info),
+    hot_water_images: toArr(row.hot_water_images),
     amenities_info: toMultilingual(row.amenities_info),
+    ac_images: toArr(row.ac_images),
     linens_towels_info: toMultilingual(row.linens_towels_info),
     trash_info: toMultilingual(row.trash_info),
     trash_maps_url: str('trash_maps_url'),
@@ -372,6 +392,11 @@ function formToPayload(form: PropertyFormState, userId?: string | null): Record<
       .map((l) => l.trim())
       .filter(Boolean);
     return lines.length > 0 ? lines : null;
+  };
+
+  const cleanArr = (arr: string[]): string[] | null => {
+    const valid = arr.filter((x) => x && x.trim().length > 0);
+    return valid.length > 0 ? valid : null;
   };
 
   const payload: Record<string, unknown> = {
@@ -402,12 +427,17 @@ function formToPayload(form: PropertyFormState, userId?: string | null): Record<
     plumbing_rules: fromMultilingual(form.plumbing_rules),
     sockets_appliances_info: fromMultilingual(form.sockets_appliances_info),
     tv_streaming_info: fromMultilingual(form.tv_streaming_info),
+    tv_images: cleanArr(form.tv_images),
     coffee_supplies_info: fromMultilingual(form.coffee_supplies_info),
     kitchen_appliances_info: fromMultilingual(form.kitchen_appliances_info),
     laundry_info: fromMultilingual(form.laundry_info),
+    laundry_images: cleanArr(form.laundry_images),
     dishwasher_info: fromMultilingual(form.dishwasher_info),
+    dishwasher_images: cleanArr(form.dishwasher_images),
     hot_water_info: fromMultilingual(form.hot_water_info),
+    hot_water_images: cleanArr(form.hot_water_images),
     amenities_info: fromMultilingual(form.amenities_info),
+    ac_images: cleanArr(form.ac_images),
     linens_towels_info: fromMultilingual(form.linens_towels_info),
     trash_info: fromMultilingual(form.trash_info),
     trash_maps_url: fromText(form.trash_maps_url),
@@ -533,7 +563,7 @@ function FileUploadField({
           className="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition-colors hover:bg-stone-50 disabled:opacity-50"
         >
           {uploading ? <Loader2 className="h-4 w-4 animate-spin text-emerald-600" /> : <Upload className="h-4 w-4" />}
-          {uploading ? 'Μεταφόρτωση…' : '📁 Επιλογή Φωτογραφίας / Αρχείου'}
+          {uploading ? 'Μεταφόρτωση…' : '📁 Επιλογή Φωτογραφίας'}
         </button>
 
         <input
@@ -568,6 +598,47 @@ function FileUploadField({
           <span className="truncate text-xs text-stone-500">{value}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+/* Component για Έως 2 Επεξηγηματικές Φωτογραφίες Συσκευών */
+function DualImageUploadField({
+  label,
+  images = [],
+  onChange,
+  onToast,
+}: {
+  label: string;
+  images: string[];
+  onChange: (images: string[]) => void;
+  onToast: (type: 'success' | 'error', message: string) => void;
+}) {
+  const updateImageAt = (index: number, val: string) => {
+    const updated = [...(images || [])];
+    updated[index] = val;
+    onChange(updated.filter(Boolean));
+  };
+
+  return (
+    <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-stone-200/60 bg-stone-50/60 p-3.5">
+      <span className="text-xs font-bold text-stone-700">{label} (Έως 2 ενδεικτικές φωτογραφίες / τηλεχειριστήριο / ρυθμίσεις)</span>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <FileUploadField
+          label="Φωτογραφία 1"
+          value={images[0] || ''}
+          onChange={(url) => updateImageAt(0, url)}
+          onToast={onToast}
+          hint="π.χ. Τηλεχειριστήριο"
+        />
+        <FileUploadField
+          label="Φωτογραφία 2"
+          value={images[1] || ''}
+          onChange={(url) => updateImageAt(1, url)}
+          onToast={onToast}
+          hint="π.χ. Διακόπτης / Οθόνη"
+        />
+      </div>
     </div>
   );
 }
@@ -740,7 +811,6 @@ export default function AdminPage() {
     setToasts((current) => current.filter((t) => t.id !== id));
   }, []);
 
-  // Έλεγχος Συνεδρίας Χρήστη (Master PIN + Supabase Auth)
   useEffect(() => {
     const checkUser = async () => {
       const isMaster = typeof window !== 'undefined' ? localStorage.getItem('hostkey_is_master') : null;
@@ -792,7 +862,6 @@ export default function AdminPage() {
     [pushToast],
   );
 
-  // Φόρτωση καταλυμάτων: Όλα αν είναι Master Admin, ΜΟΝΟ τα δικά του αν είναι απλός χρήστης
   const loadPropertyList = useCallback(async () => {
     const isMaster = typeof window !== 'undefined' && localStorage.getItem('hostkey_is_master') === 'true';
 
@@ -1261,20 +1330,73 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 3. Οδηγός Σπιτιού (House Manual) */}
+        {/* 3. Οδηγός Σπιτιού (House Manual) με Φωτογραφίες Συσκευών */}
         {activeSection === 'manual' && (
-          <div className="flex flex-col gap-5">
-            <SectionHeading title="Ψηφιακός Οδηγός Σπιτιού" subtitle="Όλες οι οδηγίες συσκευών και κανόνων σπιτιού που εμφανίζονται στον επισκέπτη — αυτόματα μεταφρασμένες." />
+          <div className="flex flex-col gap-6">
+            <SectionHeading title="Ψηφιακός Οδηγός Σπιτιού" subtitle="Όλες οι οδηγίες συσκευών και κανόνων σπιτιού που εμφανίζονται στον επισκέπτη — αυτόματα μεταφρασμένες με επεξηγηματικές φωτογραφίες." />
+            
             <MultilingualField label="Πόσιμο Νερό Βρύσης & Οδηγίες" value={form.tap_water_info} onChange={set('tap_water_info')} />
             <MultilingualField label="Κανόνες Υδραυλικών & Χαρτί Τουαλέτας" value={form.plumbing_rules} onChange={set('plumbing_rules')} />
             <MultilingualField label="Πρίζες & Ηλεκτρικές Συσκευές" value={form.sockets_appliances_info} onChange={set('sockets_appliances_info')} />
-            <MultilingualField label="Τηλεόραση & Εφαρμογές Streaming (Netflix κ.λπ.)" value={form.tv_streaming_info} onChange={set('tv_streaming_info')} />
+            
+            {/* TV & Streaming με 2 Φωτογραφίες */}
+            <div className="flex flex-col gap-2 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
+              <MultilingualField label="Τηλεόραση & Εφαρμογές Streaming (Netflix κ.λπ.)" value={form.tv_streaming_info} onChange={set('tv_streaming_info')} />
+              <DualImageUploadField
+                label="Φωτογραφίες Τηλεόρασης / Τηλεχειριστηρίου"
+                images={form.tv_images}
+                onChange={set('tv_images')}
+                onToast={pushToast}
+              />
+            </div>
+
             <MultilingualField label="Καφετιέρα & Αναλώσιμα Καφέ" value={form.coffee_supplies_info} onChange={set('coffee_supplies_info')} />
             <MultilingualField label="Κουζίνα, Φούρνος & Μικροσυσκευές" value={form.kitchen_appliances_info} onChange={set('kitchen_appliances_info')} />
-            <MultilingualField label="Πλυντήριο Ρούχων & Απορρυπαντικό" value={form.laundry_info} onChange={set('laundry_info')} />
-            <MultilingualField label="Πλυντήριο Πιάτων" value={form.dishwasher_info} onChange={set('dishwasher_info')} />
-            <MultilingualField label="Ζεστό Νερό & Ηλιακός / Θερμοσίφωνας" value={form.hot_water_info} onChange={set('hot_water_info')} />
-            <MultilingualField label="Κλιματισμός & Θέρμανση (A/C)" value={form.amenities_info} onChange={set('amenities_info')} />
+            
+            {/* Πλυντήριο Ρούχων με 2 Φωτογραφίες */}
+            <div className="flex flex-col gap-2 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
+              <MultilingualField label="Πλυντήριο Ρούχων & Απορρυπαντικό" value={form.laundry_info} onChange={set('laundry_info')} />
+              <DualImageUploadField
+                label="Φωτογραφίες Πλυντηρίου Ρούχων (Κουμπιά / Πρόγραμμα)"
+                images={form.laundry_images}
+                onChange={set('laundry_images')}
+                onToast={pushToast}
+              />
+            </div>
+
+            {/* Πλυντήριο Πιάτων με 2 Φωτογραφίες */}
+            <div className="flex flex-col gap-2 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
+              <MultilingualField label="Πλυντήριο Πιάτων" value={form.dishwasher_info} onChange={set('dishwasher_info')} />
+              <DualImageUploadField
+                label="Φωτογραφίες Πλυντηρίου Πιάτων (Ταμπλέτες / Ρυθμίσεις)"
+                images={form.dishwasher_images}
+                onChange={set('dishwasher_images')}
+                onToast={pushToast}
+              />
+            </div>
+
+            {/* Ζεστό Νερό με 2 Φωτογραφίες */}
+            <div className="flex flex-col gap-2 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
+              <MultilingualField label="Ζεστό Νερό & Ηλιακός / Θερμοσίφωνας" value={form.hot_water_info} onChange={set('hot_water_info')} />
+              <DualImageUploadField
+                label="Φωτογραφίες Διακόπτη Θερμοσίφωνα / Πίνακα"
+                images={form.hot_water_images}
+                onChange={set('hot_water_images')}
+                onToast={pushToast}
+              />
+            </div>
+
+            {/* Κλιματισμός (A/C) με 2 Φωτογραφίες */}
+            <div className="flex flex-col gap-2 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
+              <MultilingualField label="Κλιματισμός & Θέρμανση (A/C)" value={form.amenities_info} onChange={set('amenities_info')} />
+              <DualImageUploadField
+                label="Φωτογραφίες Τηλεχειριστηρίου A/C (Ιδανικές Ρυθμίσεις)"
+                images={form.ac_images}
+                onChange={set('ac_images')}
+                onToast={pushToast}
+              />
+            </div>
+
             <MultilingualField label="Έξτρα Κλινοσκεπάσματα, Πετσέτες & Μαξιλάρια" value={form.linens_towels_info} onChange={set('linens_towels_info')} />
             <MultilingualField label="Διαχείριση Σκουπιδιών & Ανακύκλωση" value={form.trash_info} onChange={set('trash_info')} />
             <TextField label="Τοποθεσία Κάδων Σκουπιδιών (Google Maps URL)" value={form.trash_maps_url} onChange={set('trash_maps_url')} placeholder="https://maps.google.com/…" type="url" />
@@ -1334,7 +1456,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 6. Προτάσεις & Σημεία (Explore Places) */}
+        {/* 6. Προτάσεις & Σημεία */}
         {activeSection === 'places' && (
           <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
