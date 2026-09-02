@@ -3,7 +3,6 @@
 import { useEffect, useState, type ComponentType } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
 import {
   Sparkles,
   KeyRound,
@@ -31,9 +30,9 @@ import {
 const TURQUOISE = '#00A896';
 const EMERALD = '#10B981';
 
-// The ONLY property slug the hero mockup is ever allowed to display.
-// Never derived from an unfiltered query — always this literal.
-const DEMO_SLUG = 'demo-luxury-suite';
+// The live demo property's slug — the smartphone showcase always points
+// here, directly, so it renders the real interactive guest guide.
+const DEMO_SLUG = 'demo';
 
 const ROTATING_PHRASES = [
   'εξοικονομεί χρόνο στους οικοδεσπότες.',
@@ -106,146 +105,7 @@ function FloatingPill({
   );
 }
 
-/**
- * Native, hand-built preview screen shown inside the phone mockup.
- * Always renders instantly (no network dependency) so the hero never
- * shows a broken/404 iframe while a real property slug is loading
- * or when none exists yet.
- */
-function NativeMockupScreen() {
-  const navItems = [
-    { icon: Sparkles, label: 'Αρχική' },
-    { icon: BookOpen, label: 'Manual' },
-    { icon: Compass, label: 'Explore' },
-    { icon: MessageCircle, label: 'Support' },
-  ];
-
-  return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-[#F7F4EC]">
-      {/* cover photo */}
-      <div className="relative h-28 w-full shrink-0 overflow-hidden bg-gradient-to-br from-emerald-200 via-teal-100 to-amber-100">
-        <div
-          className="absolute inset-0 opacity-60"
-          style={{ background: 'radial-gradient(circle at 25% 20%, rgba(255,255,255,0.7), transparent 60%)' }}
-        />
-        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/40 to-transparent" />
-        <div className="absolute bottom-2 left-3 right-3">
-          <p className="text-[8px] font-bold uppercase tracking-wide text-white/90 drop-shadow">Boutique Suite</p>
-          <p className="text-sm font-black text-white drop-shadow">Villa Hostkey</p>
-        </div>
-      </div>
-
-      {/* content */}
-      <div className="flex-1 space-y-2.5 overflow-y-auto px-3 py-3">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between rounded-2xl px-3.5 py-3 text-left text-white shadow-md"
-          style={{ background: `linear-gradient(135deg, ${TURQUOISE}, ${EMERALD})` }}
-        >
-          <span className="flex items-center gap-2 text-[11px] font-bold">
-            <KeyRound className="h-3.5 w-3.5" />
-            Self Check-in
-          </span>
-          <span className="text-[9px] font-semibold opacity-90">Κωδικοί →</span>
-        </button>
-
-        <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
-          <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide text-stone-500">
-            <Wifi className="h-3 w-3 text-sky-500" />
-            <span>Wi-Fi Δίκτυο</span>
-          </div>
-          <div className="mt-1 flex items-center justify-between">
-            <span className="text-xs font-bold text-stone-900">Villa_Hostkey_5G</span>
-            <span className="rounded-full bg-stone-100 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-700">
-              sunset-2026
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { icon: BookOpen, label: 'Οδηγός Σπιτιού' },
-            { icon: Compass, label: 'Τοπικές Προτάσεις' },
-          ].map((c, i) => (
-            <div
-              key={i}
-              className="flex flex-col items-start gap-1.5 rounded-2xl border border-stone-200 bg-white p-2.5 shadow-sm"
-            >
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                <c.icon className="h-3.5 w-3.5" />
-              </span>
-              <span className="text-[9px] font-bold leading-tight text-stone-800">{c.label}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
-          <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide text-stone-500">
-            <Sun className="h-3 w-3 text-amber-500" />
-            <span>Καιρός & Παραλίες</span>
-          </div>
-          <p className="mt-1 text-[10px] font-semibold text-stone-700">28°C • Απάνεμη ακτή σήμερα</p>
-        </div>
-      </div>
-
-      {/* bottom navigation */}
-      <div className="flex shrink-0 items-center justify-around border-t border-stone-200 bg-white/95 px-2 py-2.5 backdrop-blur">
-        {navItems.map((t, i) => (
-          <div
-            key={i}
-            className={`flex flex-col items-center gap-0.5 ${i === 0 ? 'text-emerald-600' : 'text-stone-400'}`}
-          >
-            <t.icon className="h-4 w-4" />
-            <span className="text-[7px] font-bold">{t.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function LandingPage() {
-  // The hero mockup must ONLY ever show this fixed demo property — never
-  // whichever row happens to come back first from the database (which
-  // could be a real host's personal apartment).
-  const [demoStatus, setDemoStatus] = useState<'loading' | 'ready' | 'fallback'>('loading');
-
-  useEffect(() => {
-    let cancelled = false;
-
-    // Safety timeout: never leave the phone waiting on a slow/failed
-    // request — fall back to the native mockup instead of a blank iframe.
-    const timeout = setTimeout(() => {
-      if (!cancelled) setDemoStatus((prev) => (prev === 'loading' ? 'fallback' : prev));
-    }, 3000);
-
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from('properties')
-          .select('slug')
-          .eq('slug', DEMO_SLUG)
-          .single();
-        if (cancelled) return;
-        // Only flip to "ready" when the row we asked for actually came
-        // back — any other slug, missing row, or error always falls
-        // through to the safe, hardcoded demo route below.
-        if (!error && data?.slug === DEMO_SLUG) {
-          setDemoStatus('ready');
-        } else {
-          setDemoStatus('fallback');
-        }
-      } catch {
-        if (!cancelled) setDemoStatus('fallback');
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeout);
-    };
-  }, []);
-
   const highlights = [
     { icon: KeyRound, label: 'Αυτόνομο Self Check-in & Κωδικοί' },
     { icon: Camera, label: 'Οδηγίες Συσκευών & Φωτογραφίες Manual' },
@@ -345,7 +205,9 @@ export default function LandingPage() {
             </Link>
 
             <a
-              href="#live-preview"
+              href={`/${DEMO_SLUG}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-2 rounded-2xl border border-stone-300 bg-white px-6 py-4 text-base font-bold text-stone-800 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-stone-50 active:translate-y-0"
             >
               <PlayCircle className="h-4 w-4 text-emerald-600" />
@@ -418,19 +280,15 @@ export default function LandingPage() {
             >
               <div className="absolute left-1/2 top-0 z-10 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-stone-900" />
               <div className="relative h-full w-full overflow-hidden rounded-[36px] bg-white">
-                {demoStatus === 'ready' ? (
-                  <iframe
-                    // Hardcoded literal — this must NEVER be built from a
-                    // dynamic/unfiltered query result, so it can never end
-                    // up pointing at a real host's personal property.
-                    src="/demo-luxury-suite"
-                    title="Hostkey Live Demo Preview"
-                    className="h-full w-full border-0"
-                    loading="lazy"
-                  />
-                ) : (
-                  <NativeMockupScreen />
-                )}
+                {/* Fully interactive live guide — real clicks, real
+                    scrolling, real check-in / language switch / manual
+                    photos, straight from the actual demo property. */}
+                <iframe
+                  src={`/${DEMO_SLUG}`}
+                  title="Hostkey Live Guest Guide Demo"
+                  className="h-full w-full border-0 bg-[#F7F4EC]"
+                  loading="lazy"
+                />
               </div>
             </motion.div>
 
