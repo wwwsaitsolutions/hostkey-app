@@ -21,14 +21,21 @@ import {
   Sun,
   MessageCircle,
   Bell,
-  ThermometerSun,
   Waves,
   Camera,
   Globe2,
+  AirVent,
+  Droplets,
 } from 'lucide-react';
 
 const TURQUOISE = '#00A896';
 const EMERALD = '#10B981';
+
+// Fresh, bright mint/teal used only for the page's primary conversion
+// buttons (Touch Stay style) — deliberately distinct from the deeper
+// emerald/teal used for icons, badges and secondary accents elsewhere.
+const MINT = '#2DD4BF';
+const MINT_HOVER = '#22c3ae';
 
 // The live demo property's slug — the smartphone showcase always points
 // here, directly, so it renders the real interactive guest guide.
@@ -116,9 +123,9 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#F7F4EC] text-stone-900 selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen overflow-x-hidden bg-[#FCFCFC] text-stone-900 selection:bg-emerald-500 selection:text-white">
       {/* Navigation */}
-      <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-[#F7F4EC]/90 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-3">
             <div
@@ -194,14 +201,16 @@ export default function LandingPage() {
           >
             <Link
               href="/login"
-              className="flex items-center gap-2 rounded-2xl px-7 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0"
+              className="group flex items-center gap-2 rounded-2xl px-7 py-4 text-base font-extrabold text-stone-900 shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0"
               style={{
-                background: `linear-gradient(135deg, ${TURQUOISE}, ${EMERALD})`,
-                boxShadow: '0 14px 30px -10px rgba(0,168,150,0.45)',
+                background: MINT,
+                boxShadow: '0 14px 30px -10px rgba(45,212,191,0.55)',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = MINT_HOVER)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = MINT)}
             >
               <span>Δημιουργήστε τον Οδηγό σας</span>
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
 
             <a
@@ -228,46 +237,98 @@ export default function LandingPage() {
         {/* Interactive mobile mockup / live preview centerpiece */}
         <div id="live-preview" className="relative mx-auto mt-16 max-w-5xl scroll-mt-24 sm:mt-20">
           <div className="relative mx-auto flex h-[560px] max-w-xs items-center justify-center sm:h-[620px] sm:max-w-sm">
-            {/* Left angled preview card */}
+            {/* Warm organic backdrop — embraces the back of the phone,
+                Touch Stay style, sitting behind everything else in the stack */}
+            <motion.div
+              aria-hidden
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.05 }}
+              className="absolute left-1/2 top-[45%] z-0 h-[320px] w-[280px] -translate-x-1/2 -translate-y-1/2 rotate-3 sm:h-[420px] sm:w-[360px] lg:h-[460px] lg:w-[400px]"
+              style={{
+                background: 'linear-gradient(155deg, #FDE68A 0%, #FCD34D 100%)',
+                borderRadius: '58% 42% 38% 62% / 55% 35% 65% 45%',
+                boxShadow: '0 30px 60px -25px rgba(217,158,15,0.35)',
+              }}
+            />
+
+            {/* Left angled preview card — Explore & Beaches/Restaurants */}
             <motion.div
               initial={{ opacity: 0, x: -30, rotate: -14 }}
-              animate={{ opacity: 1, x: 0, rotate: -10 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="absolute left-[-15%] top-16 z-10 hidden w-48 -rotate-6 rounded-[26px] border border-white/70 bg-white/70 p-3 shadow-2xl shadow-stone-900/10 backdrop-blur-md sm:left-[-22%] sm:block lg:left-[-8%]"
+              animate={{ opacity: 1, x: 0, rotate: -6, y: [0, -9, 0] }}
+              transition={{
+                opacity: { duration: 0.7, delay: 0.2 },
+                x: { duration: 0.7, delay: 0.2 },
+                rotate: { duration: 0.7, delay: 0.2 },
+                y: { duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 },
+              }}
+              className="absolute left-[-15%] top-14 z-10 hidden w-52 rounded-[28px] border border-white bg-white p-3 shadow-2xl shadow-stone-900/15 sm:left-[-24%] sm:block lg:left-[-9%]"
             >
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-stone-600">
-                <Waves className="h-3 w-3 text-sky-500" />
-                <span>Παραλίες & Ταβέρνες</span>
+              <div className="relative h-24 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-sky-200 via-cyan-100 to-amber-100">
+                <div
+                  className="absolute inset-0 opacity-70"
+                  style={{ background: 'radial-gradient(circle at 70% 25%, rgba(255,255,255,0.85), transparent 55%)' }}
+                />
+                <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-extrabold text-amber-600 shadow-sm">
+                  ⭐ 4.9
+                </span>
               </div>
-              <div className="mt-2 space-y-2">
-                <div className="h-16 w-full rounded-xl bg-gradient-to-br from-sky-100 to-emerald-100" />
-                <div className="h-2.5 w-3/4 rounded-full bg-stone-200" />
-                <div className="h-2.5 w-1/2 rounded-full bg-stone-200" />
-              </div>
-              <div className="mt-2 flex items-center gap-1 rounded-lg bg-amber-50 px-2 py-1 text-[9px] font-bold text-amber-700">
-                <ThermometerSun className="h-3 w-3" />
-                <span>28°C • Απάνεμη σήμερα</span>
+              <div className="mt-2.5">
+                <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide text-sky-600">
+                  <Waves className="h-3 w-3" />
+                  <span>Explore</span>
+                </div>
+                <p className="mt-0.5 text-xs font-bold text-stone-900">Ταβέρνα «Το Κύμα»</p>
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[9px] font-semibold text-sky-700">
+                    <Utensils className="h-2.5 w-2.5" />
+                    Θαλασσινά
+                  </span>
+                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-semibold text-amber-700">
+                    Παραλία 5&apos;
+                  </span>
+                </div>
               </div>
             </motion.div>
 
-            {/* Right angled preview card */}
+            {/* Right angled preview card — House Manual & Device Instructions */}
             <motion.div
               initial={{ opacity: 0, x: 30, rotate: 14 }}
-              animate={{ opacity: 1, x: 0, rotate: 10 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-              className="absolute right-[-15%] bottom-16 z-10 hidden w-48 rotate-6 rounded-[26px] border border-white/70 bg-white/70 p-3 shadow-2xl shadow-stone-900/10 backdrop-blur-md sm:right-[-22%] sm:block lg:right-[-8%]"
+              animate={{ opacity: 1, x: 0, rotate: 6, y: [0, -9, 0] }}
+              transition={{
+                opacity: { duration: 0.7, delay: 0.3 },
+                x: { duration: 0.7, delay: 0.3 },
+                rotate: { duration: 0.7, delay: 0.3 },
+                y: { duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 1.3 },
+              }}
+              className="absolute right-[-15%] bottom-14 z-10 hidden w-52 rounded-[28px] border border-white bg-white p-3 shadow-2xl shadow-stone-900/15 sm:right-[-24%] sm:block lg:right-[-9%]"
             >
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-stone-600">
-                <BookOpen className="h-3 w-3 text-indigo-500" />
-                <span>House Manual & Wi-Fi</span>
+              <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide text-indigo-600">
+                <BookOpen className="h-3 w-3" />
+                <span>House Manual</span>
               </div>
+
+              <div className="mt-2 flex items-center justify-between rounded-xl border border-stone-100 bg-stone-50 px-2.5 py-1.5">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold text-stone-700">
+                  <AirVent className="h-3 w-3 text-sky-500" />
+                  A/C: 22°C Cool
+                </span>
+              </div>
+
               <div className="mt-2 rounded-xl bg-stone-900 p-2.5 text-white">
-                <div className="text-[8px] font-semibold uppercase tracking-wide text-stone-400">Wi-Fi Δίκτυο</div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] font-semibold uppercase tracking-wide text-stone-400">Wi-Fi Δίκτυο</span>
+                  <Wifi className="h-3 w-3 text-emerald-400" />
+                </div>
                 <div className="mt-0.5 text-[11px] font-bold">Villa_Hostkey_5G</div>
                 <div className="mt-1.5 text-[8px] font-semibold uppercase tracking-wide text-stone-400">Κωδικός</div>
                 <div className="mt-0.5 font-mono text-[11px] font-bold text-emerald-400">sunset-2026</div>
               </div>
-              <div className="mt-2 h-2.5 w-2/3 rounded-full bg-stone-200" />
+
+              <div className="mt-2 flex items-center gap-1.5 rounded-xl border border-stone-100 bg-stone-50 px-2.5 py-1.5 text-[10px] font-bold text-stone-700">
+                <Droplets className="h-3 w-3 text-rose-500" />
+                Ζεστό Νερό: Ενεργό
+              </div>
             </motion.div>
 
             {/* Center phone frame */}
@@ -286,7 +347,7 @@ export default function LandingPage() {
                 <iframe
                   src={`/${DEMO_SLUG}`}
                   title="Hostkey Live Guest Guide Demo"
-                  className="h-full w-full border-0 bg-[#F7F4EC]"
+                  className="h-full w-full border-0 bg-white"
                   loading="lazy"
                 />
               </div>
@@ -367,7 +428,7 @@ export default function LandingPage() {
 
           <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Method 1: Direct Link */}
-            <div className="flex flex-col justify-between rounded-3xl border border-stone-200/80 bg-[#F7F4EC]/60 p-8 transition hover:border-emerald-500/50 hover:shadow-lg">
+            <div className="flex flex-col justify-between rounded-3xl border border-stone-200/80 bg-stone-50 p-8 transition hover:border-emerald-500/50 hover:shadow-lg">
               <div>
                 <div
                   className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-md"
@@ -412,7 +473,7 @@ export default function LandingPage() {
             </div>
 
             {/* Method 2: QR & NFC Stand */}
-            <div className="flex flex-col justify-between rounded-3xl border border-stone-200/80 bg-[#F7F4EC]/60 p-8 transition hover:border-emerald-500/50 hover:shadow-lg">
+            <div className="flex flex-col justify-between rounded-3xl border border-stone-200/80 bg-stone-50 p-8 transition hover:border-emerald-500/50 hover:shadow-lg">
               <div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-900 text-white shadow-md shadow-stone-900/20">
                   <QrCode className="h-6 w-6 text-emerald-400" />
@@ -535,11 +596,13 @@ export default function LandingPage() {
           <div className="mt-8 flex justify-center">
             <Link
               href="/login"
-              className="flex items-center gap-2 rounded-2xl px-8 py-4 text-base font-bold text-white shadow-lg transition hover:-translate-y-0.5"
+              className="flex items-center gap-2 rounded-2xl px-8 py-4 text-base font-extrabold text-stone-900 shadow-lg transition hover:-translate-y-0.5"
               style={{
-                background: `linear-gradient(135deg, ${TURQUOISE}, ${EMERALD})`,
-                boxShadow: '0 16px 34px -12px rgba(0,168,150,0.55)',
+                background: MINT,
+                boxShadow: '0 16px 34px -12px rgba(45,212,191,0.5)',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = MINT_HOVER)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = MINT)}
             >
               <span>Ξεκινήστε Δωρεάν Τώρα</span>
               <ArrowRight className="h-4 w-4" />
