@@ -118,6 +118,7 @@ interface PropertyFormState {
   whatsapp_number: string;
   host_email: string;
   host_avatar_url: string;
+  google_review_url: string;
 
   building_access: MultilingualValue;
   elevator_info: MultilingualValue;
@@ -203,6 +204,7 @@ function emptyForm(): PropertyFormState {
     whatsapp_number: '',
     host_email: '',
     host_avatar_url: '',
+    google_review_url: '',
 
     building_access: emptyMultilingual(),
     elevator_info: emptyMultilingual(),
@@ -341,6 +343,7 @@ function rowToForm(row: Record<string, unknown>): PropertyFormState {
     whatsapp_number: str('whatsapp_number'),
     host_email: str('host_email'),
     host_avatar_url: str('host_avatar_url'),
+    google_review_url: str('google_review_url'),
 
     building_access: toMultilingual(row.building_access),
     elevator_info: toMultilingual(row.elevator_info),
@@ -414,6 +417,7 @@ function formToPayload(form: PropertyFormState, userId?: string | null): Record<
     whatsapp_number: fromText(form.whatsapp_number),
     host_email: fromText(form.host_email),
     host_avatar_url: fromText(form.host_avatar_url),
+    google_review_url: fromText(form.google_review_url),
 
     building_access: fromMultilingual(form.building_access),
     elevator_info: fromMultilingual(form.elevator_info),
@@ -1210,7 +1214,7 @@ export default function AdminPage() {
           <div className="flex flex-col gap-6">
             <SectionHeading
               title="Βασικές Πληροφορίες & Στοιχεία Οικοδεσπότη"
-              subtitle="Όνομα, διεύθυνση, κεντρική φωτογραφία, κωδικοί Wi-Fi και απευθείας επικοινωνία."
+              subtitle="Όνομα, διεύθυνση, κεντρική φωτογραφία, κωδικοί Wi-Fi, απευθείας επικοινωνία και σύνδεσμος κριτικής Google."
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <TextField label="Όνομα Καταλύματος" value={form.name} onChange={set('name')} placeholder="π.χ. Πολυτελές Παραθαλάσσιο Διαμέρισμα" />
@@ -1253,7 +1257,7 @@ export default function AdminPage() {
             </div>
 
             <div className="mt-2 rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm shadow-stone-900/5">
-              <p className="mb-3 text-sm font-bold text-stone-900">Στοιχεία Επικοινωνίας & Υποστήριξης Οικοδεσπότη</p>
+              <p className="mb-3 text-sm font-bold text-stone-900">Στοιχεία Επικοινωνίας, Υποστήριξης & Κριτικής Google</p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <TextField label="Όνομα Οικοδεσπότη" value={form.host_name} onChange={set('host_name')} placeholder="π.χ. Μαρία" />
                 <FileUploadField
@@ -1265,6 +1269,13 @@ export default function AdminPage() {
                 <TextField label="Τηλέφωνο Κλήσης Οικοδεσπότη" value={form.host_phone} onChange={set('host_phone')} placeholder="+30 690 000 0000" type="tel" />
                 <TextField label="Αριθμός WhatsApp Οικοδεσπότη" value={form.whatsapp_number} onChange={set('whatsapp_number')} placeholder="+30 690 000 0000" type="tel" />
                 <TextField label="Email Οικοδεσπότη" value={form.host_email} onChange={set('host_email')} placeholder="host@example.com" type="email" />
+                <TextField
+                  label="Σύνδεσμος Google Review (URL)"
+                  value={form.google_review_url}
+                  onChange={set('google_review_url')}
+                  placeholder="https://g.page/r/.../review"
+                  hint="Link αξιολόγησης Google Business Profile"
+                />
               </div>
             </div>
 
@@ -1311,7 +1322,10 @@ export default function AdminPage() {
                   rows={4}
                   value={form.checkin_steps_text}
                   onChange={(e) => set('checkin_steps_text')(e.target.value)}
-                  placeholder="π.χ.&#10;Φτάνετε οποιαδήποτε ώρα μετά τις 15:00...&#10;Ανοίγετε την κλειδοθήκη με τον κωδικό...&#10;Τα κλειδιά βρίσκονται μέσα..."
+                  placeholder="π.χ.
+Φτάνετε οποιαδήποτε ώρα μετά τις 15:00...
+Ανοίγετε την κλειδοθήκη με τον κωδικό...
+Τα κλειδιά βρίσκονται μέσα..."
                   className={FIELD_CLASS}
                 />
               </div>
@@ -1322,7 +1336,10 @@ export default function AdminPage() {
                   rows={4}
                   value={form.checkout_steps_text}
                   onChange={(e) => set('checkout_steps_text')(e.target.value)}
-                  placeholder="π.χ.&#10;Η αναχώρηση γίνεται έως τις 11:00...&#10;Κλείνετε κλιματιστικά και φώτα...&#10;Τοποθετείτε τα κλειδιά πίσω στην κλειδοθήκη..."
+                  placeholder="π.χ.
+Η αναχώρηση γίνεται έως τις 11:00...
+Κλείνετε κλιματιστικά και φώτα...
+Τοποθετείτε τα κλειδιά πίσω στην κλειδοθήκη..."
                   className={FIELD_CLASS}
                 />
               </div>
@@ -1587,7 +1604,11 @@ export default function AdminPage() {
                 rows={10}
                 value={form.ai_custom_instructions}
                 onChange={(e) => set('ai_custom_instructions')(e.target.value)}
-                placeholder="Παράδειγμα:&#10;- Ο διακόπτης για το ζεστό νερό βρίσκεται αριστερά από την πόρτα του μπάνιου.&#10;- Ο μπλε κάδος ανακύκλωσης αδειάζει κάθε Τρίτη πρωί.&#10;- Ο καλύτερος κοντινός φούρνος απέχει μόλις 80μ. στα δεξιά.&#10;- Για νυχτερινή άφιξη: η κλειδοθήκη φωτίζεται από φωτοκύτταρο."
+                placeholder="Παράδειγμα:
+- Ο διακόπτης για το ζεστό νερό βρίσκεται αριστερά από την πόρτα του μπάνιου.
+- Ο μπλε κάδος ανακύκλωσης αδειάζει κάθε Τρίτη πρωί.
+- Ο καλύτερος κοντινός φούρνος απέχει μόλις 80μ. στα δεξιά.
+- Για νυχτερινή άφιξη: η κλειδοθήκη φωτίζεται από φωτοκύτταρο."
                 className={FIELD_CLASS + ' mt-2'}
               />
             </div>
