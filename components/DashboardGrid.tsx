@@ -60,6 +60,8 @@ import {
   Share2,
   Car,
   ListChecks,
+  Bus,
+  BadgePercent,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useBeachWeather } from '@/lib/useBeachWeather';
@@ -210,6 +212,9 @@ export interface Property {
   taxi_station_info?: LocalizedText;
   taxi_phone?: string | null;
   rentals_booking_url?: string | null; // e.g. car / moto / airport transfer booking link
+  car_rentals_info?: LocalizedText; // car rental partner info / special offer copy
+  car_rentals_booking_url?: string | null; // dedicated car rental booking link
+  transfers_info?: LocalizedText; // airport & port transfer info
 
   // --- Support & safety ---
   first_aid_location?: LocalizedText;
@@ -502,6 +507,14 @@ function mapsHref(target: { lat?: number | null; lng?: number | null; name?: str
 function nearbyMapsHref(query: string, property: Property): string {
   const search = encodeURIComponent(`${query} near ${property.address ?? property.name}`);
   return `https://www.google.com/maps/search/?api=1&query=${search}`;
+}
+
+/** Guarantees an external booking/profile URL actually has a protocol, so a
+ * value saved in the admin panel as e.g. "www.rentacar.gr/book" still opens
+ * correctly in a new tab instead of being treated as a relative path. */
+function normalizeExternalUrl(url: string): string {
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
 function pharmacyFinderHref(property: Property): string {
@@ -2234,7 +2247,7 @@ function LanguageSwitcher({ variant = 'onImage' }: { variant?: 'onImage' | 'onLi
                   key={lang.code}
                   type="button"
                   onClick={() => {
-                    setLanguage?.(lang.code as any);
+                    setLanguage?.(lang.code);
                     setOpen(false);
                   }}
                   className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-medium transition-colors hover:bg-stone-50"
@@ -3055,6 +3068,29 @@ function ExploreTab({
     return EXPLORE_TILES.find((t) => t.kind === selected.kind && t.key === selected.key) ?? null;
   }, [selected]);
 
+  // "Rentals & Transfers" is a hybrid category: alongside any user-added
+  // `places` rows, it always prioritizes these two property-level cards
+  // when the host has filled them in from the admin panel.
+  const isRentalsCategory = selected?.kind === 'places' && selected.key === 'rentals';
+  const hasCarRentalContent = Boolean(property.car_rentals_info || property.car_rentals_booking_url);
+  const hasTransfersContent = Boolean(property.transfers_info);
+  const rentalsHasPropertyContent = isRentalsCategory && (hasCarRentalContent || hasTransfersContent);
+
+  const carRentalsBody = isRentalsCategory
+    ? localize(property.car_rentals_info, language) ||
+      t('explore.car_rentals_desc', 'Enjoy exclusive rates on car rentals during your stay — book below or ask your host for details.')
+    : '';
+  const transfersBody = isRentalsCategory
+    ? localize(property.transfers_info, language) ||
+      t('explore.transfers_desc', 'Need a ride from the airport or port? Contact your host directly to arrange a comfortable transfer.')
+    : '';
+
+  const transferWhatsapp = property.host_whatsapp || property.whatsapp_number;
+  const transferHref = transferWhatsapp
+    ? waHref(transferWhatsapp, `Hi! I'd like to arrange an airport/port transfer for my stay.`)
+    : telHref(property.host_phone || property.reception_phone);
+  const transferIsWhatsapp = Boolean(transferWhatsapp);
+
   return (
     <div className="px-5 pb-4 pt-6">
       <AnimatePresence mode="wait" custom={direction} initial={false}>
@@ -3143,23 +3179,75 @@ function ExploreTab({
               <>
                 {selected.kind === 'places' && selected.key === 'beaches' && <LiveWindStrip />}
 
-                {selected.kind === 'places' && selected.key === 'rentals' && property.rentals_booking_url && (
-                  <motion.a
-                    whileTap={{ scale: 0.97 }}
-                    transition={TAP_SPRING}
-                    href={property.rentals_booking_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mb-3 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white shadow-md"
-                    style={{ background: `linear-gradient(135deg, #5E5CE6, #3634A3)` }}
-                  >
-                    <Car className="h-4 w-4" />
-                    {t('explore.book_transfer', 'Book a Car, Moto or Airport Transfer')}
-                  </motion.a>
+                {isRentalsCategory && hasCarRentalContent && (
+                  <div className="mb-3 overflow-hidden rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50 to-white shadow-sm shadow-stone-900/5">
+                    <div className="flex items-start gap-3 p-4">
+                      <div
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-md"
+                        style={{ background: `linear-gradient(135deg, #5E5CE6, #3634A3)` }}
+                      >
+                        <Car className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-bold text-stone-900">{t('explore.car_rental_title', 'Car Rental')}</p>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                            <BadgePercent className="h-3 w-3" />
+                            {t('explore.special_offer', 'Special Offer')}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-stone-600">{carRentalsBody}</p>
+                      </div>
+                    </div>
+                    {property.car_rentals_booking_url && (
+                      <motion.a
+                        whileTap={{ scale: 0.97 }}
+                        transition={TAP_SPRING}
+                        href={normalizeExternalUrl(property.car_rentals_booking_url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 border-t border-indigo-100 bg-white/70 py-3 text-sm font-semibold text-indigo-700 transition-colors hover:bg-white"
+                      >
+                        <Car className="h-4 w-4" />
+                        {t('explore.book_car_rental', 'Κράτηση Αυτοκινήτου / Book Car Rental')}
+                      </motion.a>
+                    )}
+                  </div>
+                )}
+
+                {isRentalsCategory && hasTransfersContent && (
+                  <div className="mb-3 overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-br from-sky-50 to-white shadow-sm shadow-stone-900/5">
+                    <div className="flex items-start gap-3 p-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md">
+                        <Bus className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-stone-900">
+                          {t('explore.transfers_title', 'Airport & Port Transfers')}
+                        </p>
+                        <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-stone-600">{transfersBody}</p>
+                      </div>
+                    </div>
+                    {transferHref && (
+                      <motion.a
+                        whileTap={{ scale: 0.97 }}
+                        transition={TAP_SPRING}
+                        href={transferHref}
+                        target={transferIsWhatsapp ? '_blank' : undefined}
+                        rel={transferIsWhatsapp ? 'noopener noreferrer' : undefined}
+                        className="flex items-center justify-center gap-2 border-t border-sky-100 bg-white/70 py-3 text-sm font-semibold text-sky-700 transition-colors hover:bg-white"
+                      >
+                        {transferIsWhatsapp ? <MessageCircle className="h-4 w-4" /> : <PhoneCall className="h-4 w-4" />}
+                        {transferIsWhatsapp
+                          ? t('explore.contact_whatsapp', 'Book via WhatsApp')
+                          : t('explore.contact_call', 'Call Host to Book')}
+                      </motion.a>
+                    )}
+                  </div>
                 )}
 
                 <motion.div variants={listStagger} initial="hidden" animate="show" className="flex flex-col gap-3">
-                  {filtered.length === 0 && (
+                  {filtered.length === 0 && !rentalsHasPropertyContent && (
                     <p className="py-10 text-center text-sm text-stone-400">{t('explore.empty', 'No places added for this category yet.')}</p>
                   )}
                   {filtered.map((place) => (
