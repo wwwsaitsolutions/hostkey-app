@@ -66,24 +66,6 @@ import {
 import { useLanguage } from '@/context/LanguageContext';
 import { useBeachWeather } from '@/lib/useBeachWeather';
 
-/*
- * NOTE on useBeachWeather() — this file assumes a shape of roughly:
- *   {
- *     tempC?: number; condition?: string;
- *     windSpeedKts?: number; windDirectionLabel?: string;
- *     forecast?: { day?: string; high?: number; low?: number; condition?: string }[];
- *     updatedAt?: string; isLoading?: boolean;
- *   }
- * Every read from it is optional-chained with a safe fallback, so adjust the
- * destructured field names below to match your actual hook without breaking
- * the rest of the component — the widgets that use it degrade gracefully
- * (or render nothing) when a field is absent.
- */
-
-/* ------------------------------------------------------------------ */
-/*  Types — align these with your Supabase schema                     */
-/* ------------------------------------------------------------------ */
-
 export type LocalizedText = string | Partial<Record<string, string>> | null | undefined;
 
 function localize(field: LocalizedText, language: string): string {
@@ -239,20 +221,12 @@ interface DashboardGridProps {
   onOpenAIChat?: () => void;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Brand tokens                                                      */
-/* ------------------------------------------------------------------ */
-
 const TURQUOISE = '#00A896';
 const TURQUOISE_DARK = '#028090';
 const DIRECTIONS_GRADIENT = 'from-[#00B4D8] to-[#0077B6]';
 const DIRECTIONS_SHADOW = 'shadow-[#0077B6]/30';
 
 const TAP_SPRING = { type: 'spring' as const, stiffness: 420, damping: 18 };
-
-/* ------------------------------------------------------------------ */
-/*  Static config                                                     */
-/* ------------------------------------------------------------------ */
 
 type Tab = 'home' | 'manual' | 'explore' | 'support';
 const TAB_ORDER: Tab[] = ['home', 'manual', 'explore', 'support'];
@@ -439,10 +413,6 @@ const DEFAULT_DEPARTURE_CHECKLIST: { key: string; fallback: string }[] = [
   { key: 'home.task_keys', fallback: 'Return keys to the lockbox' },
 ];
 
-/* ------------------------------------------------------------------ */
-/*  Animation variants                                                */
-/* ------------------------------------------------------------------ */
-
 const tabVariants: Variants = {
   enter: (direction: number) => ({ opacity: 0, x: direction >= 0 ? 18 : -18 }),
   center: { opacity: 1, x: 0 },
@@ -464,10 +434,6 @@ const listItem: Variants = {
   hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
 };
-
-/* ------------------------------------------------------------------ */
-/*  Utilities                                                         */
-/* ------------------------------------------------------------------ */
 
 function digitsOnly(value: string): string {
   return value.replace(/[^\d+]/g, '');
@@ -529,10 +495,6 @@ function hashString(value: string): number {
   }
   return Math.abs(hash);
 }
-
-/* ------------------------------------------------------------------ */
-/*  Apple-style squircle icon system                                   */
-/* ------------------------------------------------------------------ */
 
 function IconSquircle({
   icon: Icon,
@@ -1388,10 +1350,6 @@ function IllustratedSquircle({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Toast notifications                                               */
-/* ------------------------------------------------------------------ */
-
 interface ToastMessage {
   id: number;
   text: string;
@@ -1418,10 +1376,6 @@ function ToastStack({ toasts }: { toasts: ToastMessage[] }) {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Rating + wind badges                                              */
-/* ------------------------------------------------------------------ */
 
 function RatingBadge({ value }: { value: number }) {
   return (
@@ -1456,10 +1410,6 @@ function WindBadge({ status, note, compact = false }: { status: 'sheltered' | 'e
     </span>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Live weather                                                      */
-/* ------------------------------------------------------------------ */
 
 interface ForecastDay {
   day?: string;
@@ -1564,10 +1514,6 @@ function LiveWindStrip() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Place card                                                        */
-/* ------------------------------------------------------------------ */
-
 function PlaceCard({ place, language, onOpenDetails }: { place: Place; language: string; onOpenDetails: () => void }) {
   const description = localize(place.description, language);
   return (
@@ -1632,10 +1578,6 @@ function PlaceCard({ place, language, onOpenDetails }: { place: Place; language:
     </motion.div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Place detail drawer                                               */
-/* ------------------------------------------------------------------ */
 
 function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | null; language: string; onOpenChange: (open: boolean) => void }) {
   const description = place ? localize(place.description, language) : '';
@@ -1714,10 +1656,6 @@ function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | n
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Wi-Fi mock QR                                                     */
-/* ------------------------------------------------------------------ */
-
 function WifiQRMock({ seed }: { seed: string }) {
   const size = 11;
   const modules = useMemo(() => {
@@ -1746,10 +1684,6 @@ function WifiQRMock({ seed }: { seed: string }) {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Wi-Fi drawer                                                      */
-/* ------------------------------------------------------------------ */
 
 function WifiDrawer({
   property,
@@ -1889,10 +1823,6 @@ function WifiDrawer({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Check-in / Check-out drawer                                       */
-/* ------------------------------------------------------------------ */
-
 function CheckInOutDrawer({
   property,
   mode,
@@ -1987,10 +1917,6 @@ function CheckInOutDrawer({
     </Drawer.Root>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Get Help drawer                                                   */
-/* ------------------------------------------------------------------ */
 
 function GetHelpDrawer({
   property,
@@ -2127,10 +2053,6 @@ function GetHelpDrawer({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Floating "Get Help" bubble                                        */
-/* ------------------------------------------------------------------ */
-
 function FloatingHelpButton({ onPress }: { onPress: () => void }) {
   return (
     <div className="fixed bottom-24 right-5 z-40">
@@ -2155,10 +2077,6 @@ function FloatingHelpButton({ onPress }: { onPress: () => void }) {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Language switcher                                                 */
-/* ------------------------------------------------------------------ */
 
 const DEFAULT_LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -2218,10 +2136,6 @@ function LanguageSwitcher({ variant = 'onImage' }: { variant?: 'onImage' | 'onLi
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Home tab: Fast Arrival cards                                      */
-/* ------------------------------------------------------------------ */
 
 function KeySafeCard({ code, onToast }: { code?: string | null; onToast: (text: string) => void }) {
   const t = useT();
@@ -2312,10 +2226,6 @@ function ArrivalInfoCard({
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Hero (Home & Arrival tab)                                         */
-/* ------------------------------------------------------------------ */
 
 function HeroHeader({
   property,
@@ -2653,10 +2563,6 @@ function AddToHomeScreenBanner() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Apartment Manual tab                                              */
-/* ------------------------------------------------------------------ */
-
 function ManualAccordionRow({
   item,
   property,
@@ -2726,7 +2632,7 @@ function ManualAccordionRow({
                 <p className="text-sm leading-relaxed text-stone-600">{bodyLines[0]}</p>
               )}
 
-              {/* Εμφάνιση επεξηγηματικών φωτογραφιών συσκευής */}
+              {/* Εικόνες Συσκευών με universal zoom badge */}
               {item.images && item.images.length > 0 && (
                 <div className="mt-3.5 grid grid-cols-2 gap-2.5">
                   {item.images.map((src, i) => (
@@ -2742,8 +2648,9 @@ function ManualAccordionRow({
                         alt={`${item.title} ${i + 1}`}
                         className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                       />
-                      <span className="absolute bottom-1.5 right-1.5 rounded-md bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white backdrop-blur-sm">
-                        🔍 Μεγέθυνση
+                      <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+                        <span>🔍</span>
+                        <span>Zoom</span>
                       </span>
                     </a>
                   ))}
@@ -3045,18 +2952,28 @@ function ExploreTab({
     return EXPLORE_TILES.find((t) => t.kind === selected.kind && t.key === selected.key) ?? null;
   }, [selected]);
 
+  // Εμφάνιση των καρτών Rentals & Transfers είτε από το κατάλυμα είτε με fallback στο demo
   const isRentalsCategory = selected?.kind === 'places' && selected.key === 'rentals';
-  const hasCarRentalContent = Boolean(property.car_rentals_info || property.car_rentals_booking_url);
-  const hasTransfersContent = Boolean(property.transfers_info);
-  const rentalsHasPropertyContent = isRentalsCategory && (hasCarRentalContent || hasTransfersContent);
+  const hasCarRentalContent = true;
+  const hasTransfersContent = true;
+  const rentalsHasPropertyContent = isRentalsCategory;
 
   const carRentalsBody = isRentalsCategory
     ? localize(property.car_rentals_info, language) ||
-      t('explore.car_rentals_desc', 'Enjoy exclusive rates on car rentals during your stay — book below or ask your host for details.')
+      t(
+        'explore.car_rentals_desc',
+        'Special Offer: Please include the coupon code - saitgr - in the comments of your request. This identifies you as our guest, ensuring you the best possible offer and personalized service.'
+      )
     : '';
+
+  const carRentalBookingUrl = property.car_rentals_booking_url || property.rentals_booking_url || 'https://sevenrental.gr';
+
   const transfersBody = isRentalsCategory
     ? localize(property.transfers_info, language) ||
-      t('explore.transfers_desc', 'Need a ride from the airport or port? Contact your host directly to arrange a comfortable transfer.')
+      t(
+        'explore.transfers_desc',
+        'Transfers from/to Airports (Chania or Heraklion)\n\nWe can arrange professional private transportation directly to our accommodation:\n\n• Chania Airport:\nStandard Taxi (1-4 people): €100\nMinivan (up to 8 people): €130\n\n• Heraklion Airport:\nStandard Taxi (1-4 people): €110\nMinivan (up to 8 people): €140\n\nTo book, please send your flight number, arrival time and number of passengers to our host.'
+      )
     : '';
 
   const transferWhatsapp = property.host_whatsapp || property.whatsapp_number;
@@ -3066,7 +2983,7 @@ function ExploreTab({
   const transferIsWhatsapp = Boolean(transferWhatsapp);
 
   const carRentalCouponCode = useMemo(() => {
-    if (!isRentalsCategory) return null;
+    if (!isRentalsCategory) return 'SAITGR';
     const raw = property.car_rentals_info;
     const texts: string[] = [];
     if (typeof raw === 'string') texts.push(raw);
@@ -3086,7 +3003,7 @@ function ExploreTab({
       const tokenMatch = rest.match(tokenAfterMatch);
       if (tokenMatch?.[1]) return tokenMatch[1].toUpperCase();
     }
-    return null;
+    return 'SAITGR';
   }, [isRentalsCategory, property.car_rentals_info, carRentalsBody]);
 
   const [couponCopied, setCouponCopied] = useState(false);
@@ -3244,11 +3161,11 @@ function ExploreTab({
                       </div>
                     )}
 
-                    {property.car_rentals_booking_url && (
+                    {carRentalBookingUrl && (
                       <motion.a
                         whileTap={{ scale: 0.97 }}
                         transition={TAP_SPRING}
-                        href={normalizeExternalUrl(property.car_rentals_booking_url)}
+                        href={normalizeExternalUrl(carRentalBookingUrl)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-2 border-t border-indigo-100 bg-white/70 py-3 text-sm font-semibold text-indigo-700 transition-colors hover:bg-white"
@@ -3307,10 +3224,6 @@ function ExploreTab({
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Support & Safety tab                                              */
-/* ------------------------------------------------------------------ */
 
 function SupportServiceCard({
   badge,
@@ -3543,10 +3456,6 @@ function SupportTab({ property, language }: { property: Property; language: stri
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Bottom tab bar                                                    */
-/* ------------------------------------------------------------------ */
-
 function BottomTabBar({ active, onChange, t }: { active: Tab; onChange: (tab: Tab) => void; t: (key: string, fallback: string) => string }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-md border-t border-stone-200/60 bg-white/95 backdrop-blur-xl">
@@ -3582,10 +3491,6 @@ function BottomTabBar({ active, onChange, t }: { active: Tab; onChange: (tab: Ta
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Main export                                                       */
-/* ------------------------------------------------------------------ */
 
 export default function DashboardGrid({ property, places, onOpenAIChat }: DashboardGridProps) {
   const { language } = useLanguage();
