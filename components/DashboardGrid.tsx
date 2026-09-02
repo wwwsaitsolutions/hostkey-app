@@ -2971,7 +2971,6 @@ function ExploreTab({
       )
     : '';
 
-  // Στοιχεία επικοινωνίας για τα transfers (με fallback στο τηλέφωνο/email οικοδεσπότη)
   const transferWhatsapp = property.host_whatsapp || property.whatsapp_number || property.host_phone || '+306900000000';
   const transferEmail = property.host_email || 'info@stayguide.gr';
 
@@ -2984,7 +2983,6 @@ function ExploreTab({
     'Airport / Port Transfer Request'
   );
 
-  // Κουπόνι ΠΑΝΤΑ με πεζά γράμματα (saitgr)
   const carRentalCouponCode = useMemo(() => {
     if (!isRentalsCategory) return 'saitgr';
     const raw = property.car_rentals_info;
@@ -3004,7 +3002,7 @@ function ExploreTab({
       if (!labelMatch) continue;
       const rest = text.slice(labelMatch.index! + labelMatch[0].length);
       const tokenMatch = rest.match(tokenAfterMatch);
-      if (tokenMatch?.[1]) return tokenMatch[1].toLowerCase(); // <-- πεζά γράμματα
+      if (tokenMatch?.[1]) return tokenMatch[1].toLowerCase();
     }
     return 'saitgr';
   }, [isRentalsCategory, property.car_rentals_info, carRentalsBody]);
@@ -3021,7 +3019,10 @@ function ExploreTab({
     if (!carRentalCouponCode) return;
     try {
       await navigator.clipboard.writeText(carRentalCouponCode);
-      onToast(`Ο κωδικός έκπτωσης "${carRentalCouponCode}" αντιγράφηκε! / Coupon code "${carRentalCouponCode}" copied!`);
+      const toastMsg = language === 'el'
+        ? `Ο κωδικός έκπτωσης "${carRentalCouponCode}" αντιγράφηκε!`
+        : `Coupon code "${carRentalCouponCode}" copied!`;
+      onToast(toastMsg);
       setCouponCopied(true);
       if (couponCopyTimeoutRef.current) clearTimeout(couponCopyTimeoutRef.current);
       couponCopyTimeoutRef.current = setTimeout(() => setCouponCopied(false), 2000);
@@ -3145,7 +3146,7 @@ function ExploreTab({
                         <BadgePercent className="h-4 w-4 shrink-0 text-amber-600" />
                         <div className="min-w-0 flex-1">
                           <p className="text-[10px] font-medium uppercase tracking-wide text-amber-700/80">
-                            {t('explore.coupon_label', 'Κωδικός Έκπτωσης / Coupon Code')}
+                            {t('explore.coupon_label', 'Coupon Code')}
                           </p>
                           <p className="truncate text-sm font-bold tracking-wide text-amber-900">{carRentalCouponCode}</p>
                         </div>
@@ -3160,7 +3161,7 @@ function ExploreTab({
                           }`}
                         >
                           {couponCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                          {couponCopied ? t('explore.copied', 'Copied') : t('explore.copy', 'Αντιγραφή')}
+                          <span>{couponCopied ? t('explore.copied', 'Copied') : t('explore.copy', 'Copy')}</span>
                         </motion.button>
                       </div>
                     )}
@@ -3175,7 +3176,7 @@ function ExploreTab({
                         className="flex items-center justify-center gap-2 border-t border-indigo-100 bg-white/70 py-3 text-sm font-semibold text-indigo-700 transition-colors hover:bg-white"
                       >
                         <Car className="h-4 w-4" />
-                        {t('explore.book_car_rental', 'Κράτηση Αυτοκινήτου / Book Car Rental')}
+                        {t('explore.book_car_rental', 'Book Car Rental')}
                       </motion.a>
                     )}
                   </div>
