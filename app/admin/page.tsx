@@ -7,6 +7,7 @@ import {
   AlertCircle,
   BookOpen,
   Bot,
+  Building2,
   CheckCircle2,
   Compass,
   DoorOpen,
@@ -17,10 +18,12 @@ import {
   Phone,
   Plus,
   Save,
+  ShieldCheck,
   Sparkles,
   Star,
   Trash2,
   Upload,
+  Users,
   Wand2,
   X,
   ImageIcon,
@@ -168,6 +171,12 @@ interface ToastItem {
   id: number;
   type: 'success' | 'error';
   message: string;
+}
+
+interface AdminStats {
+  totalProperties: number;
+  totalHosts: number;
+  loading: boolean;
 }
 
 const SECTIONS: { key: SectionKey; label: string; icon: typeof HomeIcon }[] = [
@@ -606,7 +615,6 @@ function FileUploadField({
   );
 }
 
-/* Component για Έως 2 Επεξηγηματικές Φωτογραφίες Συσκευών */
 function DualImageUploadField({
   label,
   images = [],
@@ -803,6 +811,9 @@ export default function AdminPage() {
   const [editingPlace, setEditingPlace] = useState<PlaceItem | null>(null);
   const [savingPlace, setSavingPlace] = useState(false);
 
+  // --- Master Admin Metrics State ---
+  const [adminStats, setAdminStats] = useState<AdminStats>({ totalProperties: 0, totalHosts: 0, loading: false });
+
   const pushToast = useCallback((type: 'success' | 'error', message: string) => {
     const id = Date.now() + Math.random();
     setToasts((current) => [...current, { id, type, message }]);
@@ -814,6 +825,35 @@ export default function AdminPage() {
   const dismissToast = useCallback((id: number) => {
     setToasts((current) => current.filter((t) => t.id !== id));
   }, []);
+
+  const loadAdminStats = useCallback(async () => {
+    setAdminStats((prev) => ({ ...prev, loading: true }));
+    const [{ count: propertiesCount, error: propertiesError }, { data: hostRows, error: hostsError }] = await Promise.all([
+      supabase.from('properties').select('*', { count: 'exact', head: true }),
+      supabase.from('properties').select('user_id'),
+    ]);
+
+    if (!propertiesError && !hostsError) {
+      const uniqueHosts = new Set(
+        ((hostRows as { user_id: string | null }[] | null) ?? [])
+          .map((row) => row.user_id)
+          .filter((id): id is string => Boolean(id))
+      );
+      setAdminStats({
+        totalProperties: propertiesCount ?? 0,
+        totalHosts: uniqueHosts.size,
+        loading: false,
+      });
+    } else {
+      setAdminStats((prev) => ({ ...prev, loading: false }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user?.isMaster === true) {
+      loadAdminStats();
+    }
+  }, [user?.isMaster, loadAdminStats]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -1205,6 +1245,70 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
+
+      {/* Master Admin Metrics Bar — Ορατό ΜΟΝΟ στον Master Admin */}
+      {user?.isMaster === true && (
+        <div className="mx-auto max-w-5xl px-5 pt-6">
+          <div className="mb-2.5 flex items-center gap-1.5">
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            <p className="text-xs font-bold uppercase tracking-wider text-stone-500">Στατιστικά Πλατφόρμας (Master Admin)</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {/* Card 1: Unique Hosts */}
+            <div className="rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm shadow-stone-900/5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <Users className="h-5 w-5" />
+                </div>
+                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                  Πλατφόρμα Hostkey
+                </span>
+              </div>
+              {adminStats.loading ? (
+                <Loader2 className="mt-4 h-6 w-6 animate-spin text-stone-300" />
+              ) : (
+                <p className="mt-4 text-2xl font-bold tracking-tight text-stone-900">{adminStats.totalHosts}</p>
+              )}
+              <p className="mt-1 text-xs font-medium text-stone-500">👥 Σύνολο Οικοδεσποτών (Hosts)</p>
+            </div>
+
+            {/* Card 2: Total Properties */}
+            <div className="rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm shadow-stone-900/5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                  Live Guides
+                </span>
+              </div>
+              {adminStats.loading ? (
+                <Loader2 className="mt-4 h-6 w-6 animate-spin text-stone-300" />
+              ) : (
+                <p className="mt-4 text-2xl font-bold tracking-tight text-stone-900">{adminStats.totalProperties}</p>
+              )}
+              <p className="mt-1 text-xs font-medium text-stone-500">🏠 Ενεργοί Οδηγοί Καταλυμάτων</p>
+            </div>
+
+            {/* Card 3: Master Status */}
+            <div className="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm shadow-stone-900/5">
+              <div className="flex items-start justify-between gap-3">
+                <div
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-md"
+                  style={{ background: 'linear-gradient(135deg, #10B981, #047857)' }}
+                >
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <span className="inline-flex items-center rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                  Master
+                </span>
+              </div>
+              <p className="mt-4 text-lg font-bold tracking-tight text-emerald-800">Πλήρης Πρόσβαση</p>
+              <p className="mt-1 text-xs font-medium text-stone-500">⭐ Master Admin Dashboard</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Περιεχόμενο Φόρμας */}
       <div className="mx-auto max-w-5xl px-5 pt-6">
