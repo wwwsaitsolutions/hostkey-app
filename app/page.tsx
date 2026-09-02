@@ -4,7 +4,7 @@ import { useEffect, useState, type ComponentType } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles,
+  Building2,
   KeyRound,
   Wifi,
   Languages,
@@ -125,7 +125,7 @@ export default function LandingPage() {
               className="flex h-10 w-10 items-center justify-center rounded-2xl text-white shadow-md shadow-emerald-700/20"
               style={{ background: `linear-gradient(135deg, ${TURQUOISE}, ${EMERALD})` }}
             >
-              <Sparkles className="h-5 w-5" />
+              <KeyRound className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-black tracking-tight text-stone-900">Hostkey</span>
@@ -162,8 +162,8 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-50 px-3.5 py-1 text-xs font-bold text-emerald-800"
           >
-            <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Η απόλυτη εμπειρία φιλοξενίας για καταλύματα & βίλες</span>
+            <Building2 className="h-3.5 w-3.5 text-emerald-600" />
+            <span>Η απόλυτη εμπειρία φιλοξενίας για καταλύματα, βίλες & boutique ξενοδοχεία</span>
           </motion.div>
 
           <motion.h1
@@ -361,7 +361,7 @@ export default function LandingPage() {
               Πώς φτάνει ο οδηγός στα χέρια του ταξιδιώτη;
             </p>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-stone-600 sm:text-base">
-              Μηδενίστε τις επαναλαμβανόμενες ερωτήσεις για κλειδιά, Wi-Fi και συσκευές. Ο επισκέπτης έχει τα πάντα πριν καν πατήσει το πόδι του στο σπίτι.
+              Μηδενίστε τις επαναλαμβανόμενες ερωτήσεις για κλειδιά, Wi-Fi και λειτουργία συσκευών. Ο ταξιδιώτης έχει όλες τις απαραίτητες πληροφορίες διαθέσιμες από τη στιγμή της κράτησης έως και την άφιξή του στο κατάλυμα.
             </p>
           </div>
 
