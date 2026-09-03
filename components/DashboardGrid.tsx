@@ -124,6 +124,7 @@ export interface ManualItem {
 export interface Property {
   id: string;
   name: string;
+  plan_tier?: string | null;
   cover_image?: string | null;
   hero_image_url?: string | null;
   logo_url?: string | null;
@@ -1278,7 +1279,7 @@ function FireScene({ className = 'h-6 w-6' }: { className?: string }) {
       <circle cx="27" cy="29" r="1.2" fill="#9CA3AF" />
       <g fill="#4FC3F7">
         <circle cx="34" cy="24" r="1.4" />
-        <circle cx="37" cy="27" r="1" />
+        <circle cx="37" cy="27" r="1.5" />
         <circle cx="35" cy="30" r="0.8" />
       </g>
     </svg>
@@ -2949,65 +2950,7 @@ function ExploreTab({
   }, [selected]);
 
   const isRentalsCategory = selected?.kind === 'places' && selected.key === 'rentals';
-  const hasCarRentalContent = true;
-  const hasTransfersContent = true;
   const rentalsHasPropertyContent = isRentalsCategory;
-
-  const defaultCarRentalsDesc = language === 'el'
-    ? 'Ειδική Προσφορά: Συμπληρώστε τον κωδικό κουπονιού - saitgr - στα σχόλια του αιτήματός σας. Αυτό σας ταυτοποιεί ως επισκέπτη μας, εξασφαλίζοντάς σας την καλύτερη δυνατή προσφορά και εξατομικευμένη εξυπηρέτηση.'
-    : 'Special Offer: Please include the coupon code - saitgr - in the comments of your request. This identifies you as our guest, ensuring you the best possible offer and personalized service.';
-
-  const carRentalsBody = isRentalsCategory
-    ? localize(property.car_rentals_info, language) || t('explore.car_rentals_desc', defaultCarRentalsDesc)
-    : '';
-
-  const carRentalBookingUrl = property.car_rentals_booking_url || property.rentals_booking_url || 'https://sevenrental.gr';
-
-  const defaultTransfersDesc = language === 'el'
-    ? 'Μπορούμε να κανονίσουμε επαγγελματική ιδιωτική μεταφορά απευθείας στο κατάλυμά μας:\n\n• Αεροδρόμιο Χανίων:\nStandard Ταξί (1-4 άτομα): 100€\nMinivan (έως 8 άτομα): 130€\n\n• Αεροδρόμιο Ηρακλείου:\nStandard Ταξί (1-4 άτομα): 110€\nMinivan (έως 8 άτομα): 140€\n\nΓια κράτηση, επικοινωνήστε με τον οικοδεσπότη αναφέροντας τα στοιχεία της πτήσης σας.'
-    : 'We can arrange professional private transportation directly to our accommodation:\n\n• Chania Airport:\nStandard Taxi (1-4 people): €100\nMinivan (up to 8 people): €130\n\n• Heraklion Airport:\nStandard Taxi (1-4 people): €110\nMinivan (up to 8 people): €140\n\nTo book, please contact host with your flight details.';
-
-  const transfersBody = isRentalsCategory
-    ? localize(property.transfers_info, language) || t('explore.transfers_desc', defaultTransfersDesc)
-    : '';
-
-  const transferWhatsapp = property.host_whatsapp || property.whatsapp_number || property.host_phone || '+306900000000';
-  const transferEmail = property.host_email || 'info@stayguide.gr';
-
-  const transferWaHref = waHref(
-    transferWhatsapp,
-    language === 'el'
-      ? 'Γεια σας! Θα ήθελα να κανονίσω μεταφορά από/προς το αεροδρόμιο/λιμάνι. Στοιχεία πτήσης:\n• Αριθμός Πτήσης:\n• Ώρα Άφιξης:\n• Αριθμός Επιβατών:'
-      : 'Hi! I would like to book an airport/port transfer for my stay. Here are my flight details:\n• Flight Number:\n• Arrival Time:\n• Number of Passengers:'
-  );
-  const transferMailHref = mailHref(
-    transferEmail,
-    language === 'el' ? 'Αίτημα Μεταφοράς από/προς Αεροδρόμιο' : 'Airport / Port Transfer Request'
-  );
-
-  const carRentalCouponCode = useMemo(() => {
-    if (!isRentalsCategory) return 'saitgr';
-    const raw = property.car_rentals_info;
-    const texts: string[] = [];
-    if (typeof raw === 'string') texts.push(raw);
-    else if (raw && typeof raw === 'object') {
-      for (const value of Object.values(raw)) {
-        if (typeof value === 'string') texts.push(value);
-      }
-    }
-    if (carRentalsBody) texts.push(carRentalsBody);
-
-    const pattern = /(?:coupon|promo)\s*code|κωδικ[όο]ς\s*(?:έκπτωσης|κουπονιού|προσφοράς)/i;
-    const tokenAfterMatch = /[-:–—\s]+([A-Za-z0-9]{3,20})/;
-    for (const text of texts) {
-      const labelMatch = text.match(pattern);
-      if (!labelMatch) continue;
-      const rest = text.slice(labelMatch.index! + labelMatch[0].length);
-      const tokenMatch = rest.match(tokenAfterMatch);
-      if (tokenMatch?.[1]) return tokenMatch[1].toLowerCase();
-    }
-    return 'saitgr';
-  }, [isRentalsCategory, property.car_rentals_info, carRentalsBody]);
 
   const [couponCopied, setCouponCopied] = useState(false);
   const couponCopyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -3018,12 +2961,11 @@ function ExploreTab({
   }, []);
 
   const handleCopyCouponCode = async () => {
-    if (!carRentalCouponCode) return;
     try {
-      await navigator.clipboard.writeText(carRentalCouponCode);
+      await navigator.clipboard.writeText('saitgr');
       const toastMsg = language === 'el'
-        ? `Ο κωδικός έκπτωσης "${carRentalCouponCode}" αντιγράφηκε!`
-        : `Coupon code "${carRentalCouponCode}" copied!`;
+        ? 'Ο κωδικός έκπτωσης "saitgr" αντιγράφηκε!'
+        : 'Coupon code "saitgr" copied!';
       onToast(toastMsg);
       setCouponCopied(true);
       if (couponCopyTimeoutRef.current) clearTimeout(couponCopyTimeoutRef.current);
@@ -3121,36 +3063,47 @@ function ExploreTab({
               <>
                 {selected.kind === 'places' && selected.key === 'beaches' && <LiveWindStrip />}
 
-                {/* Card 1: Car Rental with interactive coupon copy button */}
-                {isRentalsCategory && hasCarRentalContent && (
-                  <div className="mb-3 overflow-hidden rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50 to-white shadow-sm shadow-stone-900/5">
-                    <div className="flex items-start gap-3 p-4">
-                      <div
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-md"
-                        style={{ background: `linear-gradient(135deg, #5E5CE6, #3634A3)` }}
-                      >
-                        <Car className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-bold text-stone-900">{t('explore.car_rental_title', 'Car Rental')}</p>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                            <BadgePercent className="h-3 w-3" />
-                            {t('explore.special_offer', 'Special Offer')}
-                          </span>
+                {/* ======================================================== */}
+                {/* 1. CAR RENTALS SECTION                                   */}
+                {/* ======================================================== */}
+                {isRentalsCategory && (
+                  <div className="flex flex-col gap-3 mb-4">
+                    {/* MASTER CAR RENTAL (ΠΑΝΤΑ ΟΡΑΤΟ ΣΕ ΟΛΟΥΣ) */}
+                    <div className="overflow-hidden rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50 to-white shadow-sm shadow-stone-900/5">
+                      <div className="flex items-start gap-3 p-4">
+                        <div
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-md"
+                          style={{ background: `linear-gradient(135deg, #5E5CE6, #3634A3)` }}
+                        >
+                          <Car className="h-5 w-5" />
                         </div>
-                        <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-stone-600">{carRentalsBody}</p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-bold text-stone-900">Seven Rental</p>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                              ✓ {language === 'el' ? 'Επίσημος Συνεργάτης Hostkey' : 'Official Hostkey Partner'}
+                            </span>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                              <BadgePercent className="h-3 w-3" />
+                              {t('explore.special_offer', 'Special Offer')}
+                            </span>
+                          </div>
+                          <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-stone-600">
+                            {language === 'el'
+                              ? 'Ειδική Προσφορά: Συμπληρώστε τον κωδικό κουπονιού - saitgr - στα σχόλια του αιτήματός σας για την καλύτερη δυνατή προσφορά και εξατομικευμένη εξυπηρέτηση.'
+                              : 'Special Offer: Please include the coupon code - saitgr - in the comments of your request for the best available rates and priority service.'}
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
-                    {carRentalCouponCode && (
+                      {/* Coupon Code saitgr */}
                       <div className="mx-4 mb-4 flex items-center gap-2 rounded-xl border border-dashed border-amber-300 bg-amber-50/80 px-3 py-2.5">
                         <BadgePercent className="h-4 w-4 shrink-0 text-amber-600" />
                         <div className="min-w-0 flex-1">
                           <p className="text-[10px] font-medium uppercase tracking-wide text-amber-700/80">
                             {t('explore.coupon_label', 'Coupon Code')}
                           </p>
-                          <p className="truncate text-sm font-bold tracking-wide text-amber-900">{carRentalCouponCode}</p>
+                          <p className="truncate text-sm font-bold tracking-wide text-amber-900">saitgr</p>
                         </div>
                         <motion.button
                           type="button"
@@ -3166,66 +3119,143 @@ function ExploreTab({
                           <span>{couponCopied ? t('explore.copied', 'Copied') : t('explore.copy', 'Copy')}</span>
                         </motion.button>
                       </div>
-                    )}
 
-                    {carRentalBookingUrl && (
                       <motion.a
                         whileTap={{ scale: 0.97 }}
                         transition={TAP_SPRING}
-                        href={normalizeExternalUrl(carRentalBookingUrl)}
+                        href="https://www.sevenrental.gr/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 border-t border-indigo-100 bg-white/70 py-3 text-sm font-semibold text-indigo-700 transition-colors hover:bg-white"
+                        className="flex items-center justify-center gap-2 border-t border-indigo-100 bg-white/80 py-3 text-sm font-semibold text-indigo-700 transition-colors hover:bg-white"
                       >
                         <Car className="h-4 w-4" />
-                        {t('explore.book_car_rental', 'Book Car Rental')}
+                        {language === 'el' ? 'Κράτηση στο Seven Rental' : 'Book at Seven Rental'}
                       </motion.a>
+                    </div>
+
+                    {/* CUSTOM CAR RENTAL ΤΟΥ ΟΙΚΟΔΕΣΠΟΤΗ (ΜΟΝΟ ΑΝ ΕΙΝΑΙ PRO) */}
+                    {(property as any).plan_tier === 'pro' && (property.car_rentals_booking_url || property.car_rentals_info) && (
+                      <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm shadow-stone-900/5">
+                        <div className="flex items-start gap-3 p-4">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 shadow-sm border border-amber-200">
+                            <Car className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold text-stone-900">
+                                {language === 'el' ? 'Εναλλακτική Πρόταση Οικοδεσπότη' : 'Host Recommendation'}
+                              </p>
+                              <span className="text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
+                                Pro
+                              </span>
+                            </div>
+                            {property.car_rentals_info && (
+                              <p className="mt-1 text-xs leading-relaxed text-stone-600">
+                                {localize(property.car_rentals_info, language)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {property.car_rentals_booking_url && (
+                          <motion.a
+                            whileTap={{ scale: 0.97 }}
+                            transition={TAP_SPRING}
+                            href={normalizeExternalUrl(property.car_rentals_booking_url)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 border-t border-stone-100 bg-stone-50/60 py-2.5 text-xs font-bold text-stone-700 transition-colors hover:bg-stone-100"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            {language === 'el' ? 'Επίσκεψη Συνδέσμου Οικοδεσπότη' : 'Visit Host Booking Partner'}
+                          </motion.a>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
 
-                {/* Card 2: Airport & Port Transfers with WhatsApp & Email Actions */}
-                {isRentalsCategory && hasTransfersContent && (
-                  <div className="mb-3 overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-br from-sky-50 to-white shadow-sm shadow-stone-900/5">
-                    <div className="flex items-start gap-3 p-4">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md">
-                        <Bus className="h-5 w-5" />
+                {/* ======================================================== */}
+                {/* 2. TRANSFERS SECTION                                     */}
+                {/* ======================================================== */}
+                {isRentalsCategory && (
+                  <div className="flex flex-col gap-3 mb-4">
+                    {/* MASTER TRANSFERS (ΠΑΝΤΑ ΟΡΑΤΟ - ΣΤΑ ΔΙΚΑ ΣΟΥ ΣΤΟΙΧΕΙΑ) */}
+                    <div className="overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-br from-sky-50 to-white shadow-sm shadow-stone-900/5">
+                      <div className="flex items-start gap-3 p-4">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md">
+                          <Bus className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-bold text-stone-900">
+                              {t('explore.transfers_title', 'Airport & Port Transfers')}
+                            </p>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
+                              Hostkey Express
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-xs text-stone-500">
+                            {t('explore.transfers_subtitle', 'Transfers from/to Airports (Chania or Heraklion)')}
+                          </p>
+                          <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-stone-600">
+                            {language === 'el'
+                              ? 'Ιδιωτικές & ασφαλείς μεταφορές απευθείας στο κατάλυμά σας:\n\n• Αεροδρόμιο Χανίων: Ταξί 1-4 άτομα (100€) | Minivan έως 8 άτομα (130€)\n• Αεροδρόμιο Ηρακλείου: Ταξί 1-4 άτομα (110€) | Minivan έως 8 άτομα (140€)\n\nΠατήστε παρακάτω για άμεση κράτηση μέσω WhatsApp ή Email.'
+                              : 'Private & comfortable transfers directly to your accommodation:\n\n• Chania Airport: Taxi 1-4 pax (€100) | Minivan up to 8 pax (€130)\n• Heraklion Airport: Taxi 1-4 pax (€110) | Minivan up to 8 pax (€140)\n\nTap below to book directly via WhatsApp or Email.'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-stone-900">
-                          {t('explore.transfers_title', 'Airport & Port Transfers')}
-                        </p>
-                        <p className="mt-0.5 text-xs text-stone-500">
-                          {t('explore.transfers_subtitle', 'Transfers from/to Airports (Chania or Heraklion)')}
-                        </p>
-                        <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-stone-600">{transfersBody}</p>
+
+                      {/* Master WhatsApp & Email Actions */}
+                      <div className="grid grid-cols-2 divide-x divide-sky-100 border-t border-sky-100 bg-white/80">
+                        <motion.a
+                          whileTap={{ scale: 0.97 }}
+                          transition={TAP_SPRING}
+                          href={waHref(
+                            '+306974519816',
+                            language === 'el'
+                              ? 'Γεια σας! Θα ήθελα να κλείσω μεταφορά από/προς το αεροδρόμιο/λιμάνι. Στοιχεία πτήσης:\n• Αριθμός Πτήσης:\n• Ώρα Άφιξης:\n• Αριθμός Επιβατών:'
+                              : 'Hi! I would like to book an airport/port transfer. Here are my flight details:\n• Flight Number:\n• Arrival Time:\n• Number of Passengers:'
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-50/50"
+                        >
+                          <MessageCircle className="h-4 w-4 text-emerald-600" />
+                          <span>WhatsApp (+30 6974519816)</span>
+                        </motion.a>
+
+                        <motion.a
+                          whileTap={{ scale: 0.97 }}
+                          transition={TAP_SPRING}
+                          href={mailHref(
+                            'www.sait.solutions@gmail.com',
+                            language === 'el' ? 'Αίτημα Μεταφοράς (Hostkey Transfer)' : 'Airport / Port Transfer Request (Hostkey)'
+                          )}
+                          className="flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-sky-700 transition-colors hover:bg-sky-50/50"
+                        >
+                          <Mail className="h-4 w-4 text-sky-600" />
+                          <span>Email Booking</span>
+                        </motion.a>
                       </div>
                     </div>
 
-                    {/* Action buttons: WhatsApp & Email */}
-                    <div className="grid grid-cols-2 divide-x divide-sky-100 border-t border-sky-100 bg-white/80">
-                      <motion.a
-                        whileTap={{ scale: 0.97 }}
-                        transition={TAP_SPRING}
-                        href={transferWaHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-50/50"
-                      >
-                        <MessageCircle className="h-4 w-4 text-emerald-600" />
-                        <span>{t('explore.contact_whatsapp', 'Book via WhatsApp')}</span>
-                      </motion.a>
-
-                      <motion.a
-                        whileTap={{ scale: 0.97 }}
-                        transition={TAP_SPRING}
-                        href={transferMailHref}
-                        className="flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-sky-700 transition-colors hover:bg-sky-50/50"
-                      >
-                        <Mail className="h-4 w-4 text-sky-600" />
-                        <span>{t('explore.contact_email', 'Email Host')}</span>
-                      </motion.a>
-                    </div>
+                    {/* CUSTOM TRANSFERS ΤΟΥ ΟΙΚΟΔΕΣΠΟΤΗ (ΜΟΝΟ ΑΝ ΕΙΝΑΙ PRO) */}
+                    {(property as any).plan_tier === 'pro' && property.transfers_info && (
+                      <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm shadow-stone-900/5">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <Bus className="h-4 w-4 text-amber-600" />
+                          <p className="text-sm font-bold text-stone-900">
+                            {language === 'el' ? 'Επιπλέον Οδηγίες Μεταφοράς Οικοδεσπότη' : 'Host Transfer Instructions'}
+                          </p>
+                          <span className="text-[10px] font-bold uppercase bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full ml-auto">
+                            Pro
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-line text-xs leading-relaxed text-stone-600">
+                          {localize(property.transfers_info, language)}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
