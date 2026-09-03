@@ -24,10 +24,11 @@ export default async function PropertyPage({ params }: PageProps) {
     notFound();
   }
 
-  // 2. Φόρτωση ΟΛΩΝ των προτάσεων (παραλίες, φαγητό, supermarkets, bars κλπ.)
+  // 2. Φόρτωση ΜΟΝΟ των προτάσεων του συγκεκριμένου καταλύματος
   const { data: places } = await supabase
     .from('places')
     .select('*')
+    .eq('property_id', property.id)
     .order('name', { ascending: true });
 
   return (
