@@ -123,6 +123,7 @@ interface PropertyFormState {
   host_email: string;
   host_avatar_url: string;
   google_review_url: string;
+  plan_tier: string;
 
   building_access: MultilingualValue;
   elevator_info: MultilingualValue;
@@ -211,6 +212,7 @@ function emptyForm(): PropertyFormState {
     host_email: '',
     host_avatar_url: '',
     google_review_url: '',
+    plan_tier: 'free',
 
     building_access: emptyMultilingual(),
     elevator_info: emptyMultilingual(),
@@ -350,6 +352,7 @@ function rowToForm(row: Record<string, unknown>): PropertyFormState {
     host_email: str('host_email'),
     host_avatar_url: str('host_avatar_url'),
     google_review_url: str('google_review_url'),
+    plan_tier: str('plan_tier') || 'free',
 
     building_access: toMultilingual(row.building_access),
     elevator_info: toMultilingual(row.elevator_info),
@@ -490,6 +493,7 @@ function TextField({
   placeholder,
   type = 'text',
   hint,
+  disabled = false,
 }: {
   label: string;
   value: string;
@@ -497,11 +501,19 @@ function TextField({
   placeholder?: string;
   type?: string;
   hint?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="flex flex-col gap-1.5">
       <FieldLabel hint={hint}>{label}</FieldLabel>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={FIELD_CLASS} />
+      <input 
+        type={type} 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)} 
+        placeholder={placeholder} 
+        disabled={disabled}
+        className={`${FIELD_CLASS} ${disabled ? 'bg-stone-100/70 text-stone-400 cursor-not-allowed border-stone-200' : ''}`} 
+      />
     </label>
   );
 }
@@ -1156,6 +1168,8 @@ export default function AdminPage() {
     return places.filter((p) => p.category === selectedCategoryFilter);
   }, [places, selectedCategoryFilter]);
 
+  const isPro = form.plan_tier === 'pro';
+
   if (authChecking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F4EC]">
@@ -1565,26 +1579,56 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* Ενοικιάσεις Αυτοκινήτων */}
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-stone-900">🚗 Ενοικιάσεις Αυτοκινήτων</span>
-                <button
-                  type="button"
-                  onClick={() => setShowProModal('Ενοικιάσεις Αυτοκινήτων & Δικά σας Affiliate Links')}
-                  className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-1 text-[11px] font-bold text-amber-800 hover:bg-amber-100"
-                >
-                  <Crown className="h-3 w-3 text-amber-600" />
-                  <span>Προσαρμοσμένο Affiliate (Pro)</span>
-                </button>
+                {isPro ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <Check className="h-3 w-3 text-emerald-600" />
+                    <span>Ενεργό Pro</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowProModal('Ενοικιάσεις Αυτοκινήτων & Δικά σας Affiliate Links')}
+                    className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-1 text-[11px] font-bold text-amber-800 hover:bg-amber-100"
+                  >
+                    <Crown className="h-3 w-3 text-amber-600" />
+                    <span>Προσαρμοσμένο Affiliate (Pro)</span>
+                  </button>
+                )}
               </div>
               <MultilingualField label="Οδηγίες & Προτάσεις Ενοικίασης Αυτοκινήτου" value={form.car_rentals_info} onChange={set('car_rentals_info')} />
-              <TextField label="Σύνδεσμος Κράτησης Ενοικίασης (Booking URL)" value={form.car_rentals_booking_url} onChange={set('car_rentals_booking_url')} placeholder="https://sevenrental.gr" type="url" />
+              <TextField 
+                label="Σύνδεσμος Κράτησης Ενοικίασης (Booking URL)" 
+                value={form.car_rentals_booking_url} 
+                onChange={set('car_rentals_booking_url')} 
+                placeholder={isPro ? "https://sevenrental.gr" : "Διαθέσιμο μόνο στο πλάνο Pro (Χρησιμοποιείται το προεπιλεγμένο της πλατφόρμας)"} 
+                type="url" 
+                disabled={!isPro}
+              />
             </div>
 
+            {/* Μεταφορές (Transfers) */}
             <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-stone-900">🚐 Μεταφορές από/προς Αεροδρόμια & Λιμάνια (Transfers)</span>
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">Περιλαμβάνεται Δωρεάν</span>
+                {isPro ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <Check className="h-3 w-3 text-emerald-600" />
+                    <span>Ενεργό Pro</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowProModal('Προσαρμοσμένες Μεταφορές (Transfers Affiliate)')}
+                    className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-1 text-[11px] font-bold text-amber-800 hover:bg-amber-100"
+                  >
+                    <Crown className="h-3 w-3 text-amber-600" />
+                    <span>Προσαρμοσμένο Affiliate (Pro)</span>
+                  </button>
+                )}
               </div>
               <MultilingualField label="Οδηγίες Μεταφοράς & Σημεία Παραλαβής" value={form.transfers_info} onChange={set('transfers_info')} />
             </div>
@@ -1716,14 +1760,21 @@ export default function AdminPage() {
                 title="Βάση Γνώσης AI Βοηθού Επισκεπτών (AI Concierge)"
                 subtitle="Προσθέστε ειδικές οδηγίες, μυστικά tips και πληροφορίες για αυτό το σπίτι. Ο AI βοηθός θα τις χρησιμοποιεί για να απαντά άμεσα στους επισκέπτες σας 24/7."
               />
-              <button
-                type="button"
-                onClick={() => setShowProModal('24/7 AI Concierge Βοηθός')}
-                className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-95"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>AI Pro Προσθήκη</span>
-              </button>
+              {isPro ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3.5 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-300">
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Ενεργό AI Pro</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowProModal('24/7 AI Concierge Βοηθός')}
+                  className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-95"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>AI Pro Προσθήκη</span>
+                </button>
+              )}
             </div>
 
             <div className="rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm">
