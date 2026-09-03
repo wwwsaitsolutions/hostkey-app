@@ -1388,31 +1388,6 @@ function RatingBadge({ value }: { value: number }) {
   );
 }
 
-function WindBadge({ status, note, compact = false }: { status: 'sheltered' | 'exposed'; note?: string | null; compact?: boolean }) {
-  if (status === 'sheltered') {
-    return (
-      <span
-        className={`flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50/95 font-semibold text-sky-700 shadow-sm backdrop-blur-md ${
-          compact ? 'px-2 py-1 text-[10px]' : 'px-3 py-1.5 text-[11px]'
-        }`}
-      >
-        <Shield className="h-3 w-3" />
-        {compact ? 'Sheltered' : (note ?? 'Best Choice Today · Sheltered from the wind')}
-      </span>
-    );
-  }
-  return (
-    <span
-      className={`flex items-center gap-1.5 rounded-full border border-stone-200 bg-white/90 font-medium text-stone-500 shadow-sm backdrop-blur-md ${
-        compact ? 'px-2 py-1 text-[10px]' : 'px-3 py-1.5 text-[11px]'
-      }`}
-    >
-      <Wind className="h-3 w-3" />
-      {compact ? 'Exposed' : (note ?? 'Exposed today')}
-    </span>
-  );
-}
-
 interface ForecastDay {
   day?: string;
   high?: number;
@@ -1529,7 +1504,6 @@ function LiveWindStrip() {
 function PlaceCard({ place, language, onOpenDetails }: { place: Place; language: string; onOpenDetails: () => void }) {
   const description = localize(place.description, language);
   const name = localize(place.name as any, language);
-  const windNote = localize(place.wind_note, language);
 
   return (
     <motion.div
@@ -1546,12 +1520,6 @@ function PlaceCard({ place, language, onOpenDetails }: { place: Place; language:
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
-
-          {place.category === 'beaches' && place.wind_status && (
-            <div className="absolute inset-x-3 top-3">
-              <WindBadge status={place.wind_status} note={windNote} />
-            </div>
-          )}
 
           <div className="absolute inset-x-3 bottom-3 flex flex-wrap gap-1.5">
             {place.google_rating != null && <RatingBadge value={place.google_rating} />}
@@ -1597,7 +1565,6 @@ function PlaceCard({ place, language, onOpenDetails }: { place: Place; language:
 function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | null; language: string; onOpenChange: (open: boolean) => void }) {
   const description = place ? localize(place.description, language) : '';
   const name = place ? localize(place.name as any, language) : '';
-  const windNote = place ? localize(place.wind_note, language) : '';
 
   return (
     <Drawer.Root open={place !== null} onOpenChange={onOpenChange}>
@@ -1629,9 +1596,6 @@ function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | n
                 </Drawer.Close>
 
                 <div className="absolute inset-x-5 bottom-4 flex flex-wrap gap-1.5">
-                  {place.category === 'beaches' && place.wind_status && (
-                    <WindBadge status={place.wind_status} note={windNote} />
-                  )}
                   {place.google_rating != null && <RatingBadge value={place.google_rating} />}
                 </div>
               </div>
