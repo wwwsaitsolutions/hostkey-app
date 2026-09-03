@@ -34,6 +34,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import BeachPickerModal from '@/components/admin/BeachPickerModal';
 
 /* ------------------------------------------------------------------ */
 /* Τύποι Δεδομένων                                                    */
@@ -506,13 +507,13 @@ function TextField({
   return (
     <label className="flex flex-col gap-1.5">
       <FieldLabel hint={hint}>{label}</FieldLabel>
-      <input 
-        type={type} 
-        value={value} 
-        onChange={(e) => onChange(e.target.value)} 
-        placeholder={placeholder} 
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
         disabled={disabled}
-        className={`${FIELD_CLASS} ${disabled ? 'bg-stone-100/70 text-stone-400 cursor-not-allowed border-stone-200' : ''}`} 
+        className={`${FIELD_CLASS} ${disabled ? 'bg-stone-100/70 text-stone-400 cursor-not-allowed border-stone-200' : ''}`}
       />
     </label>
   );
@@ -810,6 +811,9 @@ export default function AdminPage() {
   const [agreedTerms, setAgreedTerms] = useState<boolean>(true);
   const [showProModal, setShowProModal] = useState<string | null>(null);
 
+  // --- Beach Picker Modal State ---
+  const [beachPickerOpen, setBeachPickerOpen] = useState(false);
+
   // --- Stripe Pro Subscription State ---
   const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month');
   const [redirectingStripe, setRedirectingStripe] = useState(false);
@@ -942,17 +946,27 @@ export default function AdminPage() {
   }, [user?.id, pushToast, handleSelectProperty]);
 
   const loadPlaces = useCallback(async () => {
+    if (!form.id) {
+      setPlaces([]);
+      return;
+    }
     setLoadingPlaces(true);
-    const { data, error } = await supabase.from('places').select('*').order('name', { ascending: true });
+    const { data, error } = await supabase
+      .from('places')
+      .select('*')
+      .eq('property_id', form.id)
+      .order('name', { ascending: true });
+
     setLoadingPlaces(false);
     if (error) {
       pushToast('error', `Αδυναμία φόρτωσης τοποθεσιών: ${error.message}`);
       return;
     }
+
     const mapped: PlaceItem[] = ((data as Record<string, unknown>[]) ?? []).map((row) => ({
       id: String(row.id),
       category: row.category as PlaceCategory,
-      name: String(row.name ?? ''),
+      name: typeof row.name === 'object' && row.name !== null ? (row.name as any).el || (row.name as any).en || '' : String(row.name ?? ''),
       description: toMultilingual(row.description),
       image_url: String(row.image_url ?? ''),
       google_rating: row.google_rating != null ? String(row.google_rating) : '4.8',
@@ -962,14 +976,19 @@ export default function AdminPage() {
       address: String(row.address ?? ''),
     }));
     setPlaces(mapped);
-  }, [pushToast]);
+  }, [form.id, pushToast]);
 
   useEffect(() => {
     if (user) {
       loadPropertyList();
+    }
+  }, [user, loadPropertyList]);
+
+  useEffect(() => {
+    if (form.id) {
       loadPlaces();
     }
-  }, [user, loadPropertyList, loadPlaces]);
+  }, [form.id, loadPlaces]);
 
   const handleCreateNew = useCallback(() => {
     setForm(emptyForm());
@@ -1075,9 +1094,14 @@ export default function AdminPage() {
       pushToast('error', 'Παρακαλώ εισάγετε όνομα σημείου.');
       return;
     }
+    if (!form.id) {
+      pushToast('error', 'Παρακαλώ επιλέξτε ή αποθηκεύστε πρώτα το κατάλυμα.');
+      return;
+    }
 
     setSavingPlace(true);
     const payload = {
+      property_id: form.id,
       category: editingPlace.category,
       name: editingPlace.name.trim(),
       description: fromMultilingual(editingPlace.description),
@@ -1108,7 +1132,7 @@ export default function AdminPage() {
     } finally {
       setSavingPlace(false);
     }
-  }, [editingPlace, loadPlaces, pushToast]);
+  }, [editingPlace, form.id, loadPlaces, pushToast]);
 
   const handleDeletePlace = useCallback(
     async (id: string, name: string) => {
@@ -1294,7 +1318,6 @@ export default function AdminPage() {
             <p className="text-xs font-bold uppercase tracking-wider text-stone-500">Στατιστικά Πλατφόρμας (Master Admin)</p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {/* Card 1: Unique Hosts */}
             <div className="rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm shadow-stone-900/5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
@@ -1312,7 +1335,6 @@ export default function AdminPage() {
               <p className="mt-1 text-xs font-medium text-stone-500">👥 Σύνολο Οικοδεσποτών (Hosts)</p>
             </div>
 
-            {/* Card 2: Total Properties */}
             <div className="rounded-2xl border border-stone-200/70 bg-white p-5 shadow-sm shadow-stone-900/5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
@@ -1330,7 +1352,6 @@ export default function AdminPage() {
               <p className="mt-1 text-xs font-medium text-stone-500">🏠 Ενεργοί Οδηγοί Καταλυμάτων</p>
             </div>
 
-            {/* Card 3: Master Status */}
             <div className="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm shadow-stone-900/5">
               <div className="flex items-start justify-between gap-3">
                 <div
@@ -1600,12 +1621,12 @@ export default function AdminPage() {
                 )}
               </div>
               <MultilingualField label="Οδηγίες & Προτάσεις Ενοικίασης Αυτοκινήτου" value={form.car_rentals_info} onChange={set('car_rentals_info')} />
-              <TextField 
-                label="Σύνδεσμος Κράτησης Ενοικίασης (Booking URL)" 
-                value={form.car_rentals_booking_url} 
-                onChange={set('car_rentals_booking_url')} 
-                placeholder={isPro ? "https://sevenrental.gr" : "Διαθέσιμο μόνο στο πλάνο Pro (Χρησιμοποιείται το προεπιλεγμένο της πλατφόρμας)"} 
-                type="url" 
+              <TextField
+                label="Σύνδεσμος Κράτησης Ενοικίασης (Booking URL)"
+                value={form.car_rentals_booking_url}
+                onChange={set('car_rentals_booking_url')}
+                placeholder={isPro ? "https://sevenrental.gr" : "Διαθέσιμο μόνο στο πλάνο Pro (Χρησιμοποιείται το προεπιλεγμένο της πλατφόρμας)"}
+                type="url"
                 disabled={!isPro}
               />
             </div>
@@ -1655,14 +1676,25 @@ export default function AdminPage() {
                 title="Προτάσεις, Παραλίες & Αξιοθέατα"
                 subtitle="Διαχειριστείτε παραλίες, ταβέρνες, σούπερ μάρκετ, νυχτερινή ζωή και σημεία ενδιαφέροντος."
               />
-              <button
-                type="button"
-                onClick={() => setEditingPlace(emptyPlace())}
-                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
-              >
-                <Plus className="h-4 w-4" />
-                Προσθήκη Νέου Σημείου
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {form.id && (
+                  <button
+                    type="button"
+                    onClick={() => setBeachPickerOpen(true)}
+                    className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-amber-600"
+                  >
+                    🏖️ Επιλογή από έτοιμες Παραλίες (έως 15)
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEditingPlace(emptyPlace())}
+                  className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  Προσθήκη Νέου Σημείου
+                </button>
+              </div>
             </div>
 
             <div className="flex gap-2 overflow-x-auto pb-2">
@@ -1692,13 +1724,17 @@ export default function AdminPage() {
               })}
             </div>
 
-            {loadingPlaces ? (
+            {!form.id ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm font-medium text-amber-800">
+                Παρακαλώ επιλέξτε ή αποθηκεύστε πρώτα το κατάλυμά σας για να διαχειριστείτε τα σημεία προτάσεων.
+              </div>
+            ) : loadingPlaces ? (
               <div className="flex items-center justify-center py-12 text-stone-400">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : filteredPlaces.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-400">
-                Δεν βρέθηκαν σημεία σε αυτή την κατηγορία. Πατήστε "Προσθήκη Νέου Σημείου" για να δημιουργήσετε.
+                Δεν βρέθηκαν σημεία σε αυτή την κατηγορία. Πατήστε "Προσθήκη Νέου Σημείου" ή "Επιλογή από έτοιμες Παραλίες".
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1911,6 +1947,19 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Μαζικής Επιλογής Παραλιών */}
+      {form.id && (
+        <BeachPickerModal
+          propertyId={form.id}
+          isOpen={beachPickerOpen}
+          onClose={() => setBeachPickerOpen(false)}
+          onSuccess={() => {
+            loadPlaces();
+            pushToast('success', 'Οι επιλεγμένες παραλίες ενημερώθηκαν επιτυχώς!');
+          }}
+        />
       )}
 
       {/* Παράθυρο Προσθήκης / Επεξεργασίας Σημείου */}
