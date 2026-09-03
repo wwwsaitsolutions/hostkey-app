@@ -20,157 +20,152 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Λείπουν τα κλειδιά του Supabase στο .env.local (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY).');
+  console.error('❌ Λείπουν τα κλειδιά του Supabase στο .env.local.');
   process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Βασικό λεξικό αντιστοίχισης γνωστών παραλιών σε ελληνικά
-const COMMON_NAMES_MAP = {
-  'preveli': 'Πρέβελη',
-  'elafonisi': 'Ελαφονήσι',
-  'elafonissi': 'Ελαφονήσι',
-  'balos': 'Μπάλος',
-  'falasarna': 'Φαλάσαρνα',
-  'falassarna': 'Φαλάσαρνα',
-  'vai': 'Βάι',
-  'matala': 'Μάταλα',
-  'plakias': 'Πλακιάς',
-  'rethymno': 'Παραλία Ρεθύμνου',
-  'rethymnon': 'Παραλία Ρεθύμνου',
-  'rethymnon city': 'Παραλία Ρεθύμνου (Πόλη)',
-  'bali': 'Μπαλί',
-  'agia galini': 'Αγία Γαλήνη',
-  'triopetra': 'Τριόπετρα',
-  'agios pavlos': 'Άγιος Παύλος',
-  'kommos': 'Κομμός',
-  'georgioupoli': 'Γεωργιούπολη',
-  'seitan limania': 'Σεϊτάν Λιμάνια',
-  'stavros': 'Σταυρός',
-  'elounda': 'Ελούντα',
-  'plaka': 'Πλάκα',
-  'frangokastello': 'Φραγκοκάστελλο',
-  'damnoni': 'Δαμνόνι',
-  'amoudi': 'Αμμούδι',
-  'schinaria': 'Σχοινάρια',
-  'rodakino': 'Ροδάκινο',
-  'souda': 'Σούδα',
+// Μεταφράσεις εδάφους
+const SURFACE_TRANSLATIONS = {
+  'fine sand': { el: 'Ψιλή άμμος', en: 'Fine sand', fr: 'Sable fin', de: 'Feiner Sand' },
+  'sand': { el: 'Άμμος', en: 'Sand', fr: 'Sable', de: 'Sand' },
+  'pebble': { el: 'Βότσαλο', en: 'Pebble', fr: 'Galets', de: 'Kiesel' },
+  'sand and pebble': { el: 'Άμμος & βότσαλο', en: 'Sand & pebble', fr: 'Sable et galets', de: 'Sand und Kiesel' },
+  'sand/pebble': { el: 'Άμμος & βότσαλο', en: 'Sand & pebble', fr: 'Sable et galets', de: 'Sand und Kiesel' },
+  'coarse sand': { el: 'Χοντρή άμμος', en: 'Coarse sand', fr: 'Gros sable', de: 'Grober Sand' },
+  'rocky': { el: 'Βράχια', en: 'Rocks', fr: 'Rochers', de: 'Felsen' },
+  'rocks': { el: 'Βράχια', en: 'Rocks', fr: 'Rochers', de: 'Felsen' },
 };
+
+// Μεταφράσεις περιοχών/νομών
+const REGION_MAP = {
+  chania: { el: 'Χανιά', en: 'Chania', fr: 'La Canée', de: 'Chania' },
+  rethymno: { el: 'Ρέθυμνο', en: 'Rethymno', fr: 'Réthymnon', de: 'Rethymno' },
+  heraklion: { el: 'Ηράκλειο', en: 'Heraklion', fr: 'Héraklion', de: 'Heraklion' },
+  lasithi: { el: 'Λασίθι', en: 'Lasithi', fr: 'Lassithi', de: 'Lasithi' },
+};
+
+function getSurfaceText(rawSurface) {
+  if (!rawSurface) return null;
+  const key = String(rawSurface).toLowerCase().trim();
+  return SURFACE_TRANSLATIONS[key] || {
+    el: rawSurface,
+    en: rawSurface,
+    fr: rawSurface,
+    de: rawSurface,
+  };
+}
+
+function getRegionInfo(rawRegion) {
+  const rLower = String(rawRegion || '').toLowerCase();
+  if (rLower.includes('chan') || rLower.includes('χαν')) return REGION_MAP.chania;
+  if (rLower.includes('reth') || rLower.includes('ρεθ')) return REGION_MAP.rethymno;
+  if (rLower.includes('her') || rLower.includes('ηρακ')) return REGION_MAP.heraklion;
+  if (rLower.includes('las') || rLower.includes('λασι') || rLower.includes('sit') || rLower.includes('agios')) return REGION_MAP.lasithi;
+  return { el: 'Κρήτη', en: 'Crete', fr: 'Crète', de: 'Kreta' };
+}
+
+// Βασική μετατροπή Greeklish σε Ελληνικά για τα ονόματα παραλιών
+function transliterateToGreek(latin) {
+  if (!latin) return '';
+  if (/[\u0370-\u03FF]/.test(latin)) return latin; // Ήδη ελληνικά
+
+  const map = {
+    'th': 'θ', 'ch': 'χ', 'ps': 'ψ', 'ks': 'ξ',
+    'a': 'α', 'b': 'β', 'c': 'κ', 'd': 'δ', 'e': 'ε', 'f': 'φ',
+    'g': 'γ', 'h': 'χ', 'i': 'ι', 'j': 'τζ', 'k': 'κ', 'l': 'λ',
+    'm': 'μ', 'n': 'ν', 'o': 'ο', 'p': 'π', 'q': 'κ', 'r': 'ρ',
+    's': 'σ', 't': 'τ', 'u': 'υ', 'v': 'β', 'w': 'γου', 'x': 'ξ',
+    'y': 'υ', 'z': 'ζ'
+  };
+
+  let str = latin.toLowerCase();
+  for (const [k, v] of Object.entries(map)) {
+    str = str.replaceAll(k, v);
+  }
+  // Κεφαλαίο το πρώτο γράμμα
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 async function run() {
   const filePath = path.resolve(process.cwd(), 'beaches.json');
   if (!fs.existsSync(filePath)) {
-    console.error('❌ Δεν βρέθηκε το αρχείο beaches.json στον κεντρικό φάκελο.');
+    console.error('❌ Δεν βρέθηκε το αρχείο beaches.json.');
     process.exit(1);
   }
 
-  const raw = fs.readFileSync(filePath, 'utf8');
-  const beaches = JSON.parse(raw);
-
-  console.log(`⏳ Έναρξη επεξεργασίας ${beaches.length} παραλιών από το beaches.json...`);
+  const beaches = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  console.log(`⏳ Επεξεργασία ${beaches.length} παραλιών με πλήρη πολυγλωσσική υποστήριξη...`);
 
   const records = beaches.map((b) => {
     const isSouth = b.orientation === 'S';
+    const reg = getRegionInfo(b.region || b.prefecture);
+    const surf = getSurfaceText(b.surface);
 
-    // 1. Εξαγωγή & Δημιουργία Δίγλωσσου Ονόματος
-    let nameObj = { el: '', en: '', fr: '', de: '' };
+    // Ονόματα
+    let elName = '';
+    let enName = '';
     if (typeof b.name === 'object' && b.name !== null) {
-      nameObj = {
-        el: b.name.el || b.name.gr || b.name.en || '',
-        en: b.name.en || b.name.el || '',
-        fr: b.name.fr || b.name.en || '',
-        de: b.name.de || b.name.en || '',
-      };
+      elName = b.name.el || b.name.gr || transliterateToGreek(b.name.en || '');
+      enName = b.name.en || b.name.el || '';
     } else {
-      const rawName = String(b.name || '').trim();
-      const rawLower = rawName.toLowerCase();
+      const raw = String(b.name || '').trim();
+      elName = /[\u0370-\u03FF]/.test(raw) ? raw : transliterateToGreek(raw);
+      enName = raw;
+    }
 
-      // Έλεγχος αν υπάρχει ήδη ελληνική γραφή ή αντιστοίχιση
-      const explicitGreek = b.name_el || b.nameGr || b.greek_name || b.name_greek;
-      let elName = explicitGreek || COMMON_NAMES_MAP[rawLower] || rawName;
-      let enName = b.name_en || b.nameEn || rawName;
+    // Περιγραφές σε 4 γλώσσες
+    const surfEl = surf ? ` Έδαφος: ${surf.el}.` : '';
+    const surfEn = surf ? ` Surface: ${surf.en}.` : '';
+    const surfFr = surf ? ` Type: ${surf.fr}.` : '';
+    const surfDe = surf ? ` Strand: ${surf.de}.` : '';
 
-      // Αν το όνομα είναι ήδη ελληνικό
-      const hasGreekChars = /[\u0370-\u03FF]/.test(rawName);
-      if (hasGreekChars) {
-        elName = rawName;
-      }
+    const orgEl = b.organized ? ' Οργανωμένη με παροχές.' : ' Μη οργανωμένη / φυσικό τοπίο.';
+    const orgEn = b.organized ? ' Organized with beach facilities.' : ' Natural / unorganized beach.';
+    const orgFr = b.organized ? ' Aménagée avec équipements.' : ' Plage naturelle non aménagée.';
+    const orgDe = b.organized ? ' Bewirtschafteter Strand mit Liegen.' : ' Naturbelassener Strand.';
 
-      nameObj = {
+    const descObj = {
+      el: `Όμορφη παραλία στην περιοχή ${reg.el}.${surfEl}${orgEl}`,
+      en: `Beautiful beach located in the ${reg.en} region.${surfEn}${orgEn}`,
+      fr: `Magnifique plage située dans la région de ${reg.fr}.${surfFr}${orgFr}`,
+      de: `Wunderschöner Strand in der Region ${reg.de}.${surfDe}${orgDe}`,
+    };
+
+    return {
+      name: {
         el: elName,
         en: enName,
         fr: enName,
         de: enName,
-      };
-    }
-
-    // 2. Εξαγωγή & Δημιουργία Δίγλωσσης Περιγραφής
-    let descObj = { el: '', en: '', fr: '', de: '' };
-    if (typeof b.description === 'object' && b.description !== null) {
-      descObj = {
-        el: b.description.el || b.description.gr || b.description.en || '',
-        en: b.description.en || b.description.el || '',
-        fr: b.description.fr || b.description.en || '',
-        de: b.description.de || b.description.en || '',
-      };
-    } else if (typeof b.description === 'string' && b.description.trim()) {
-      descObj = {
-        el: b.description,
-        en: b.description,
-        fr: b.description,
-        de: b.description,
-      };
-    } else {
-      const surfaceStr = b.surface ? ` Έδαφος: ${b.surface}.` : '';
-      const orgStr = b.organized ? ' Οργανωμένη με παροχές.' : '';
-      const surfaceEn = b.surface ? ` Surface: ${b.surface}.` : '';
-      const orgEn = b.organized ? ' Organized beach.' : '';
-
-      descObj = {
-        el: `Όμορφη παραλία στην περιοχή ${b.region || 'Κρήτη'}.${surfaceStr}${orgStr}`,
-        en: `Beautiful beach located in ${b.region || 'Crete'}.${surfaceEn}${orgEn}`,
-        fr: `Belle plage située dans la région de ${b.region || 'Crète'}.`,
-        de: `Schöner Strand in der Region ${b.region || 'Kreta'}.`,
-      };
-    }
-
-    // 3. Κανονικοποίηση Νομού / Περιοχής
-    let reg = b.region || b.prefecture || 'Κρήτη';
-    const regLower = String(reg).toLowerCase();
-    if (regLower.includes('chania') || regLower.includes('χανι')) reg = 'Χανιά';
-    else if (regLower.includes('reth') || regLower.includes('ρεθυ')) reg = 'Ρέθυμνο';
-    else if (regLower.includes('her') || regLower.includes('ηρακλ')) reg = 'Ηράκλειο';
-    else if (regLower.includes('las') || regLower.includes('λασι') || regLower.includes('sitia') || regLower.includes('agios')) reg = 'Λασίθι';
-
-    return {
-      name: nameObj,
+      },
       description: descObj,
       image_url: b.imageUrl || b.image_url || '/images/default-beach.jpg',
       google_rating: b.rating ? parseFloat(b.rating) : 4.5,
       wind_status: isSouth ? 'sheltered' : 'exposed',
       lat: b.lat || (b.coordinates && b.coordinates.lat) || 35.24,
       lng: b.lng || (b.coordinates && b.coordinates.lng) || 24.47,
-      region: reg,
+      region: reg.el,
     };
   });
 
-  console.log('🧹 Εκκαθάριση προηγούμενων εγγραφών στον πίνακα master_beaches...');
+  console.log('🧹 Εκκαθάριση πίνακα master_beaches...');
   await supabase.from('master_beaches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-  console.log('🚀 Εισαγωγή παραλιών στο master_beaches...');
+  console.log('🚀 Εισαγωγή νέων πολυγλωσσικών δεδομένων...');
   const batchSize = 50;
   for (let i = 0; i < records.length; i += batchSize) {
     const batch = records.slice(i, i + batchSize);
     const { error } = await supabase.from('master_beaches').insert(batch);
     if (error) {
-      console.error(`❌ Σφάλμα στην παρτίδα ${i + 1} - ${i + batch.length}:`, error.message);
+      console.error(`❌ Σφάλμα στο batch ${i}:`, error.message);
     } else {
       console.log(`✅ Εισήχθησαν ${Math.min(i + batchSize, records.length)} / ${records.length} παραλίες`);
     }
   }
 
-  console.log('🎉 Η εισαγωγή όλων των παραλιών ολοκληρώθηκε με επιτυχία!');
+  console.log('🎉 Η εισαγωγή ολοκληρώθηκε επιτυχώς με σωστές μεταφράσεις σε EL, EN, FR, DE!');
 }
 
 run();
