@@ -72,9 +72,9 @@ export type LocalizedText = string | Partial<Record<string, string>> | null | un
 function localize(field: LocalizedText, language: string): string {
   if (field == null) return '';
   if (typeof field === 'object' && !Array.isArray(field)) {
-    return field[language] || '';
+    return (field as Record<string, string>)[language] || (field as Record<string, string>)['en'] || (field as Record<string, string>)['el'] || '';
   }
-  return language === 'en' ? String(field) : '';
+  return String(field);
 }
 
 function useT(): (key: string, fallback: string) => string {
@@ -205,7 +205,7 @@ export interface Place {
   google_review_count?: number | null;
   tripadvisor_rating?: number | null;
   wind_status?: 'sheltered' | 'exposed' | null;
-  wind_note?: string | null;
+  wind_note?: LocalizedText;
   lat?: number | null;
   lng?: number | null;
   address?: string | null;
@@ -1528,6 +1528,9 @@ function LiveWindStrip() {
 
 function PlaceCard({ place, language, onOpenDetails }: { place: Place; language: string; onOpenDetails: () => void }) {
   const description = localize(place.description, language);
+  const name = localize(place.name as any, language);
+  const windNote = localize(place.wind_note, language);
+
   return (
     <motion.div
       variants={listItem}
@@ -1536,7 +1539,7 @@ function PlaceCard({ place, language, onOpenDetails }: { place: Place; language:
       <button type="button" onClick={onOpenDetails} className="block w-full text-left">
         <div className="relative h-48 w-full bg-stone-100">
           {place.image_url ? (
-            <Image src={place.image_url} alt={place.name} fill sizes="420px" className="object-cover" />
+            <Image src={place.image_url} alt={name} fill sizes="420px" className="object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <ImageOff className="h-6 w-6 text-stone-300" />
@@ -1546,7 +1549,7 @@ function PlaceCard({ place, language, onOpenDetails }: { place: Place; language:
 
           {place.category === 'beaches' && place.wind_status && (
             <div className="absolute inset-x-3 top-3">
-              <WindBadge status={place.wind_status} note={place.wind_note} />
+              <WindBadge status={place.wind_status} note={windNote} />
             </div>
           )}
 
@@ -1557,7 +1560,7 @@ function PlaceCard({ place, language, onOpenDetails }: { place: Place; language:
       </button>
 
       <div className="p-4">
-        <p className="text-base font-semibold text-stone-900">{place.name}</p>
+        <p className="text-base font-semibold text-stone-900">{name}</p>
         {description && <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-stone-500">{description}</p>}
 
         <div className="mt-3.5 flex items-center gap-2">
@@ -1593,6 +1596,9 @@ function PlaceCard({ place, language, onOpenDetails }: { place: Place; language:
 
 function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | null; language: string; onOpenChange: (open: boolean) => void }) {
   const description = place ? localize(place.description, language) : '';
+  const name = place ? localize(place.name as any, language) : '';
+  const windNote = place ? localize(place.wind_note, language) : '';
+
   return (
     <Drawer.Root open={place !== null} onOpenChange={onOpenChange}>
       <Drawer.Portal>
@@ -1601,10 +1607,10 @@ function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | n
           <div className="mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full bg-stone-300" />
           {place && (
             <div className="flex-1 overflow-y-auto pb-8">
-              <Drawer.Title className="sr-only">{place.name}</Drawer.Title>
+              <Drawer.Title className="sr-only">{name}</Drawer.Title>
               <div className="relative h-64 w-full bg-stone-100">
                 {place.image_url ? (
-                  <Image src={place.image_url} alt={place.name} fill sizes="480px" className="object-cover" priority />
+                  <Image src={place.image_url} alt={name} fill sizes="480px" className="object-cover" priority />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
                     <ImageOff className="h-8 w-8 text-stone-300" />
@@ -1624,14 +1630,14 @@ function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | n
 
                 <div className="absolute inset-x-5 bottom-4 flex flex-wrap gap-1.5">
                   {place.category === 'beaches' && place.wind_status && (
-                    <WindBadge status={place.wind_status} note={place.wind_note} />
+                    <WindBadge status={place.wind_status} note={windNote} />
                   )}
                   {place.google_rating != null && <RatingBadge value={place.google_rating} />}
                 </div>
               </div>
 
               <div className="px-5 pt-5">
-                <h3 className="text-xl font-semibold tracking-tight text-stone-900">{place.name}</h3>
+                <h3 className="text-xl font-semibold tracking-tight text-stone-900">{name}</h3>
                 {description && <p className="mt-2 text-sm leading-relaxed text-stone-500">{description}</p>}
 
                 <div className="mt-6 flex gap-2.5">
