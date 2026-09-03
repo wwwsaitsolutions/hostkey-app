@@ -555,7 +555,7 @@ function CheckInScene({ className = 'h-16 w-full' }: { className?: string }) {
           <stop offset="0%" stopColor="#FFE29A" />
           <stop offset="55%" stopColor="#F4B942" />
           <stop offset="100%" stopColor="#B8791E" />
-        </linearGradient>
+        </radialGradient>
         <radialGradient id={`${id}-glow`} cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#FFD873" stopOpacity="0.85" />
           <stop offset="100%" stopColor="#FFD873" stopOpacity="0" />
@@ -1384,6 +1384,31 @@ function RatingBadge({ value }: { value: number }) {
     <span className="flex items-center gap-1 rounded-full border border-white/70 bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-stone-900 shadow-sm backdrop-blur-md">
       <Star className="h-3 w-3 fill-current" style={{ color: '#FFB300' }} />
       {value.toFixed(1)}
+    </span>
+  );
+}
+
+function WindBadge({ status, note, compact = false }: { status: 'sheltered' | 'exposed'; note?: string | null; compact?: boolean }) {
+  if (status === 'sheltered') {
+    return (
+      <span
+        className={`flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50/95 font-semibold text-sky-700 shadow-sm backdrop-blur-md ${
+          compact ? 'px-2 py-1 text-[10px]' : 'px-3 py-1.5 text-[11px]'
+        }`}
+      >
+        <Shield className="h-3 w-3" />
+        {compact ? 'Sheltered' : (note ?? 'Best Choice Today · Sheltered from the wind')}
+      </span>
+    );
+  }
+  return (
+    <span
+      className={`flex items-center gap-1.5 rounded-full border border-stone-200 bg-white/90 font-medium text-stone-500 shadow-sm backdrop-blur-md ${
+        compact ? 'px-2 py-1 text-[10px]' : 'px-3 py-1.5 text-[11px]'
+      }`}
+    >
+      <Wind className="h-3 w-3" />
+      {compact ? 'Exposed' : (note ?? 'Exposed today')}
     </span>
   );
 }
