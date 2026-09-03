@@ -51,6 +51,7 @@ import {
   Eye,
   EyeOff,
   Sun,
+  Cloud,
   CloudSun,
   CloudRain,
   GlassWater,
@@ -64,7 +65,7 @@ import {
   BadgePercent,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { useBeachWeather } from '@/lib/useBeachWeather';
+import { useBeachWeather, knotsToBeaufort } from '@/lib/useBeachWeather';
 
 export type LocalizedText = string | Partial<Record<string, string>> | null | undefined;
 
@@ -151,7 +152,6 @@ export interface Property {
   pharmacy_phone?: string | null;
   trash_maps_url?: string | null;
 
-  // --- Home & Arrival ---
   keysafe_code?: string | null;
   building_access?: LocalizedText;
   elevator_info?: LocalizedText;
@@ -159,7 +159,6 @@ export interface Property {
   parking_maps_url?: string | null;
   late_arrival_info?: LocalizedText;
 
-  // --- Apartment manual ---
   tv_streaming_info?: LocalizedText;
   coffee_supplies_info?: LocalizedText;
   kitchen_appliances_info?: LocalizedText;
@@ -169,7 +168,6 @@ export interface Property {
   amenities_info?: LocalizedText;
   linens_towels_info?: LocalizedText;
 
-  // --- Appliance Photos ---
   tv_images?: string[] | null;
   laundry_images?: string[] | null;
   dishwasher_images?: string[] | null;
@@ -182,7 +180,6 @@ export interface Property {
   plumbing_rules?: LocalizedText;
   sockets_appliances_info?: LocalizedText;
 
-  // --- Explore ---
   luggage_storage_info?: LocalizedText;
   bus_transport_info?: LocalizedText;
   taxi_station_info?: LocalizedText;
@@ -369,7 +366,7 @@ const KEYSAFE_TONE: SquircleTone = { gradient: 'from-[#FFD60A] to-[#D4972B]', sh
 const BUILDING_TONE: SquircleTone = { gradient: 'from-[#8E8E93] to-[#48484A]', shadow: 'shadow-[#8E8E93]/25' };
 const PARKING_TONE: SquircleTone = { gradient: 'from-[#5E5CE6] to-[#3634A3]', shadow: 'shadow-[#5E5CE6]/25' };
 const LATE_ARRIVAL_TONE: SquircleTone = { gradient: 'from-[#5856D6] to-[#2E2A80]', shadow: 'shadow-[#5856D6]/25' };
-const WEATHER_TONE: SquircleTone = { gradient: 'from-[#5AC8FA] to-[#0A84FF]', shadow: 'shadow-[#5AC8FA]/25' };
+const WEATHER_SUN_TONE: SquircleTone = { gradient: 'from-[#F59E0B] to-[#D97706]', shadow: 'shadow-[#F59E0B]/25' };
 const FIRST_AID_TONE: SquircleTone = { gradient: 'from-[#FF3B30] to-[#C41C14]', shadow: 'shadow-[#FF3B30]/25' };
 
 const EMERGENCY_SCENES: Record<EmergencyIconKey, SceneComponent> = {
@@ -1427,16 +1424,26 @@ interface BeachWeatherShape {
   tempC?: number;
   condition?: string;
   windSpeedKts?: number;
+  windBeaufort?: number;
   windDirectionLabel?: string;
   isLoading?: boolean;
   forecast?: ForecastDay[];
 }
 
-function conditionIcon(condition?: string) {
+function ForecastIcon({ condition }: { condition?: string }) {
   const c = (condition ?? '').toLowerCase();
-  if (c.includes('rain') || c.includes('storm')) return CloudRain;
-  if (c.includes('cloud')) return CloudSun;
-  return Sun;
+  if (c.includes('rain') || c.includes('storm')) {
+    return <CloudRain className="h-4 w-4 text-sky-500" />;
+  }
+  if (c.includes('cloud') || c.includes('partly')) {
+    return (
+      <div className="relative flex h-5 w-5 items-center justify-center">
+        <Sun className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 text-amber-500 fill-amber-400" />
+        <Cloud className="relative h-4 w-4 text-stone-400 fill-stone-100" />
+      </div>
+    );
+  }
+  return <Sun className="h-4 w-4 text-amber-500 fill-amber-400" />;
 }
 
 function WeatherWidget() {
@@ -1445,7 +1452,7 @@ function WeatherWidget() {
   if (weather.isLoading) {
     return (
       <div className="mb-4 flex items-center gap-2 rounded-2xl border border-stone-200/60 bg-white px-4 py-3 text-stone-400 shadow-sm shadow-stone-900/5">
-        <Sun className="h-4 w-4 animate-pulse" />
+        <Sun className="h-4 w-4 animate-pulse text-amber-500" />
         <span className="text-xs font-medium">Checking local weather…</span>
       </div>
     );
@@ -1455,21 +1462,21 @@ function WeatherWidget() {
   const hasForecast = Boolean(weather.forecast && weather.forecast.length > 0);
   if (!hasCurrent && !hasForecast) return null;
 
-  const CurrentIcon = conditionIcon(weather.condition);
+  const bft = weather.windBeaufort ?? (weather.windSpeedKts != null ? knotsToBeaufort(weather.windSpeedKts) : undefined);
 
   return (
-    <div className="mb-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 shadow-sm shadow-stone-900/5">
+    <div className="mb-4 rounded-2xl border border-amber-200/50 bg-amber-50/40 p-4 shadow-sm shadow-stone-900/5">
       <div className="flex items-center gap-3">
-        <IconSquircle icon={CurrentIcon} tone={WEATHER_TONE} />
+        <IconSquircle icon={Sun} tone={WEATHER_SUN_TONE} />
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700/70">Local Weather</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-800/80">Local Weather</p>
           <p className="flex items-baseline gap-1.5">
             <span className="text-xl font-bold text-stone-900">{weather.tempC != null ? `${Math.round(weather.tempC)}°C` : '—'}</span>
-            {weather.condition && <span className="text-sm font-medium text-stone-500">{weather.condition}</span>}
+            {weather.condition && <span className="text-sm font-medium text-stone-600">{weather.condition}</span>}
           </p>
-          {weather.windSpeedKts != null && (
-            <p className="mt-0.5 text-xs text-sky-800">
-              Wind {weather.windSpeedKts} kt{weather.windDirectionLabel ? ` · ${weather.windDirectionLabel}` : ''}
+          {bft != null && (
+            <p className="mt-0.5 text-xs font-medium text-amber-900">
+              Wind {bft} Bft{weather.windDirectionLabel ? ` · ${weather.windDirectionLabel}` : ''}
             </p>
           )}
         </div>
@@ -1478,11 +1485,10 @@ function WeatherWidget() {
       {hasForecast && (
         <div className="mt-3 flex gap-2 overflow-x-auto pb-0.5">
           {weather.forecast!.slice(0, 5).map((day, i) => {
-            const DayIcon = conditionIcon(day.condition);
             return (
-              <div key={i} className="flex min-w-[52px] flex-col items-center gap-1 rounded-xl bg-white/70 px-2 py-2">
+              <div key={i} className="flex min-w-[52px] flex-col items-center gap-1 rounded-xl bg-white/80 px-2 py-2 shadow-sm">
                 <span className="text-[10px] font-semibold uppercase text-stone-500">{day.day ?? `+${i + 1}d`}</span>
-                <DayIcon className="h-4 w-4 text-sky-600" />
+                <ForecastIcon condition={day.condition} />
                 <span className="text-[11px] font-semibold text-stone-800">{day.high != null ? `${Math.round(day.high)}°` : '–'}</span>
                 <span className="text-[10px] text-stone-400">{day.low != null ? `${Math.round(day.low)}°` : '–'}</span>
               </div>
@@ -1506,13 +1512,14 @@ function LiveWindStrip() {
     );
   }
 
-  if (weather.windSpeedKts == null) return null;
+  const bft = weather.windBeaufort ?? (weather.windSpeedKts != null ? knotsToBeaufort(weather.windSpeedKts) : null);
+  if (bft == null) return null;
 
   return (
     <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-sky-800 shadow-sm shadow-stone-900/5">
       <IconSquircle icon={Wind} tone={{ gradient: 'from-[#00C0FF] to-[#0070BA]', shadow: 'shadow-[#00C0FF]/25' }} size={32} rounded="rounded-xl" />
       <p className="text-xs font-medium">
-        Live wind check: <span className="font-semibold">{weather.windSpeedKts} kt</span>
+        Live wind check: <span className="font-semibold">{bft} Bft</span>
         {weather.windDirectionLabel ? ` from ${weather.windDirectionLabel}` : ''} — beaches below are marked sheltered or exposed accordingly.
       </p>
     </div>
@@ -1709,7 +1716,7 @@ function WifiDrawer({
       await navigator.clipboard.writeText(value);
       onToast(toastText);
     } catch {
-      // clipboard unavailable
+      // ignore clipboard failure
     }
   };
 
@@ -2152,7 +2159,7 @@ function KeySafeCard({ code, onToast }: { code?: string | null; onToast: (text: 
       await navigator.clipboard.writeText(code);
       onToast(t('home.code_copied', 'Code copied to clipboard'));
     } catch {
-      // clipboard unavailable
+      // ignore
     }
   };
 
@@ -2254,7 +2261,7 @@ function HeroHeader({
       await navigator.clipboard.writeText(property.address);
       onToast(t('home.address_copied', 'Address copied to clipboard'));
     } catch {
-      // clipboard unavailable
+      // ignore
     }
   };
 
@@ -2637,7 +2644,6 @@ function ManualAccordionRow({
                 <p className="text-sm leading-relaxed text-stone-600">{bodyLines[0]}</p>
               )}
 
-              {/* Εικόνες Συσκευών με universal zoom badge */}
               {item.images && item.images.length > 0 && (
                 <div className="mt-3.5 grid grid-cols-2 gap-2.5">
                   {item.images.map((src, i) => (
@@ -2868,7 +2874,7 @@ function ManualTab({
             item={item}
             property={property}
             expanded={expandedKey === item.key}
-            onToggle={() => onExpandedKeyChange(expandedKey === item.key ? null : item.key)}
+            onExpandedKeyChange={onExpandedKeyChange}
             onOpenWifi={onOpenWifi}
           />
         </motion.div>
@@ -2975,7 +2981,7 @@ function ExploreTab({
       if (couponCopyTimeoutRef.current) clearTimeout(couponCopyTimeoutRef.current);
       couponCopyTimeoutRef.current = setTimeout(() => setCouponCopied(false), 2000);
     } catch {
-      // clipboard unavailable
+      // ignore
     }
   };
 
@@ -3067,12 +3073,8 @@ function ExploreTab({
               <>
                 {selected.kind === 'places' && selected.key === 'beaches' && <LiveWindStrip />}
 
-                {/* ======================================================== */}
-                {/* 1. CAR RENTALS SECTION                                   */}
-                {/* ======================================================== */}
                 {isRentalsCategory && (
                   <div className="flex flex-col gap-3 mb-4">
-                    {/* MASTER CAR RENTAL (ΠΑΝΤΑ ΟΡΑΤΟ ΣΕ ΟΛΟΥΣ) */}
                     <div className="overflow-hidden rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50 to-white shadow-sm shadow-stone-900/5">
                       <div className="flex items-start gap-3 p-4">
                         <div
@@ -3100,7 +3102,6 @@ function ExploreTab({
                         </div>
                       </div>
 
-                      {/* Coupon Code saitgr */}
                       <div className="mx-4 mb-4 flex items-center gap-2 rounded-xl border border-dashed border-amber-300 bg-amber-50/80 px-3 py-2.5">
                         <BadgePercent className="h-4 w-4 shrink-0 text-amber-600" />
                         <div className="min-w-0 flex-1">
@@ -3137,7 +3138,6 @@ function ExploreTab({
                       </motion.a>
                     </div>
 
-                    {/* CUSTOM CAR RENTAL ΤΟΥ ΟΙΚΟΔΕΣΠΟΤΗ (ΜΟΝΟ ΑΝ ΕΙΝΑΙ PRO) */}
                     {(property as any).plan_tier === 'pro' && (property.car_rentals_booking_url || property.car_rentals_info) && (
                       <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm shadow-stone-900/5">
                         <div className="flex items-start gap-3 p-4">
@@ -3178,12 +3178,8 @@ function ExploreTab({
                   </div>
                 )}
 
-                {/* ======================================================== */}
-                {/* 2. TRANSFERS SECTION                                     */}
-                {/* ======================================================== */}
                 {isRentalsCategory && (
                   <div className="flex flex-col gap-3 mb-4">
-                    {/* MASTER TRANSFERS (ΠΑΝΤΑ ΟΡΑΤΟ - ΣΤΑ ΔΙΚΑ ΣΟΥ ΣΤΟΙΧΕΙΑ) */}
                     <div className="overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-br from-sky-50 to-white shadow-sm shadow-stone-900/5">
                       <div className="flex items-start gap-3 p-4">
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md">
@@ -3209,7 +3205,6 @@ function ExploreTab({
                         </div>
                       </div>
 
-                      {/* Master WhatsApp & Email Actions */}
                       <div className="grid grid-cols-2 divide-x divide-sky-100 border-t border-sky-100 bg-white/80">
                         <motion.a
                           whileTap={{ scale: 0.97 }}
@@ -3242,7 +3237,6 @@ function ExploreTab({
                       </div>
                     </div>
 
-                    {/* CUSTOM TRANSFERS ΤΟΥ ΟΙΚΟΔΕΣΠΟΤΗ (ΜΟΝΟ ΑΝ ΕΙΝΑΙ PRO) */}
                     {(property as any).plan_tier === 'pro' && property.transfers_info && (
                       <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm shadow-stone-900/5">
                         <div className="flex items-center gap-2 mb-1.5">
@@ -3620,7 +3614,7 @@ export default function DashboardGrid({ property, places, onOpenAIChat }: Dashbo
         </div>
       )}
 
-  <AnimatePresence mode="wait" custom={tabState.direction} initial={false}>
+      <AnimatePresence mode="wait" custom={tabState.direction} initial={false}>
         <motion.div
           key={tabState.tab}
           custom={tabState.direction}

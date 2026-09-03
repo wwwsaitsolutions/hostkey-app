@@ -13,11 +13,28 @@ export interface BeachWeatherState {
   tempC?: number;
   condition?: string;
   windSpeedKts?: number;
+  windBeaufort?: number;
   windDirectionDeg?: number;
   windDirectionLabel?: string;
   isNorthWind?: boolean;
   isLoading: boolean;
   forecast: ForecastDay[];
+}
+
+export function knotsToBeaufort(knots: number): number {
+  if (knots < 1) return 0;
+  if (knots <= 3) return 1;
+  if (knots <= 6) return 2;
+  if (knots <= 10) return 3;
+  if (knots <= 16) return 4;
+  if (knots <= 21) return 5;
+  if (knots <= 27) return 6;
+  if (knots <= 33) return 7;
+  if (knots <= 40) return 8;
+  if (knots <= 47) return 9;
+  if (knots <= 55) return 10;
+  if (knots <= 63) return 11;
+  return 12;
 }
 
 function getWindDirectionLabel(deg: number): string {
@@ -56,7 +73,8 @@ export function useBeachWeather(lat: number = 35.3672, lng: number = 24.4871): B
         if (!isMounted || !data.current_weather) return;
 
         const cw = data.current_weather;
-        const windSpeedKts = Math.round(cw.windspeed * 0.539957); // μετατροπή km/h σε knots
+        const windSpeedKts = Math.round(cw.windspeed * 0.539957);
+        const windBeaufort = knotsToBeaufort(windSpeedKts);
         const windDir = cw.winddirection;
         const isNorth = (windDir >= 315 || windDir <= 45 || (windDir > 45 && windDir < 135));
 
@@ -75,6 +93,7 @@ export function useBeachWeather(lat: number = 35.3672, lng: number = 24.4871): B
           tempC: Math.round(cw.temperature),
           condition: getWeatherCondition(cw.weathercode),
           windSpeedKts,
+          windBeaufort,
           windDirectionDeg: windDir,
           windDirectionLabel: getWindDirectionLabel(windDir),
           isNorthWind: isNorth,
