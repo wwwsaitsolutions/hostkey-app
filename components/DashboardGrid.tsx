@@ -555,7 +555,7 @@ function CheckInScene({ className = 'h-16 w-full' }: { className?: string }) {
           <stop offset="0%" stopColor="#FFE29A" />
           <stop offset="55%" stopColor="#F4B942" />
           <stop offset="100%" stopColor="#B8791E" />
-        </radialGradient>
+        </linearGradient>
         <radialGradient id={`${id}-glow`} cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#FFD873" stopOpacity="0.85" />
           <stop offset="100%" stopColor="#FFD873" stopOpacity="0" />
