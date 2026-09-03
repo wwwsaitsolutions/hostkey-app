@@ -1554,7 +1554,7 @@ function PlaceCard({ place, language, onOpenDetails }: { place: Place; language:
 
       <div className="p-4">
         <p className="text-base font-semibold text-stone-900">{name}</p>
-        {description && <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-stone-500">{description}</p>}
+        {description && <p className="mt-1 text-sm leading-relaxed text-stone-600">{description}</p>}
 
         <div className="mt-3.5 flex items-center gap-2">
           <motion.a
@@ -1627,7 +1627,7 @@ function PlaceDetailDrawer({ place, language, onOpenChange }: { place: Place | n
 
               <div className="px-5 pt-5">
                 <h3 className="text-xl font-semibold tracking-tight text-stone-900">{name}</h3>
-                {description && <p className="mt-2 text-sm leading-relaxed text-stone-500">{description}</p>}
+                {description && <p className="mt-2 text-sm leading-relaxed text-stone-600">{description}</p>}
 
                 <div className="mt-6 flex gap-2.5">
                   <motion.a
