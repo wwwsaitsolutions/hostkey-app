@@ -2874,7 +2874,7 @@ function ManualTab({
             item={item}
             property={property}
             expanded={expandedKey === item.key}
-            onExpandedKeyChange={onExpandedKeyChange}
+            onToggle={() => onExpandedKeyChange(expandedKey === item.key ? null : item.key)}
             onOpenWifi={onOpenWifi}
           />
         </motion.div>
