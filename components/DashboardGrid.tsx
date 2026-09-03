@@ -2268,7 +2268,7 @@ function HeroHeader({
 
   return (
     <div>
-      <div className="relative h-80 w-full bg-stone-800">
+      <div className="relative h-80 w-full overflow-hidden rounded-b-[32px] bg-stone-800 shadow-md shadow-stone-900/5">
         {coverImage ? (
           <Image src={coverImage} alt={property.name} fill priority sizes="480px" className="object-cover" />
         ) : (
