@@ -444,8 +444,12 @@ function telHref(phone?: string | null): string | undefined {
   return phone ? `tel:${digitsOnly(phone)}` : undefined;
 }
 
-function mailHref(email?: string | null, subject = 'Question about my stay'): string | undefined {
-  return email ? `mailto:${email}?subject=${encodeURIComponent(subject)}` : undefined;
+function mailHref(email?: string | null, subject = 'Question about my stay', body = ''): string | undefined {
+  if (!email) return undefined;
+  const params = new URLSearchParams();
+  if (subject) params.set('subject', subject);
+  if (body) params.set('body', body);
+  return `mailto:${email}?${params.toString()}`;
 }
 
 function waHref(phone?: string | null, message = 'Hi! I have a question about my stay.'): string | undefined {
@@ -721,7 +725,7 @@ function ApartmentHeroScene({ className = 'h-full w-full' }: { className?: strin
 
       <path d="M84 132 Q182 108 280 132" stroke="#3B2A22" strokeWidth="1.4" fill="none" opacity="0.4" />
       {[110, 138, 166, 194, 222, 250].map((x, i) => (
-        <circle key={x} cx={x} cy={130 - Math.abs(3 - i) * 2} r="2.6" fill="#FFE6A8" opacity="0.95" />
+        <circle key={x} cy={130 - Math.abs(3 - i) * 2} r="2.6" fill="#FFE6A8" opacity="0.95" />
       ))}
     </svg>
   );
@@ -916,13 +920,13 @@ function CultureScene({ className = 'h-14 w-14' }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 64" className={className} fill="none" aria-hidden>
       <defs>
-        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFDD8A" />
-          <stop offset="100%" stopColor="#F2A93C" />
-        </linearGradient>
         <linearGradient id={`${id}-stone`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#E7D8BE" />
           <stop offset="100%" stopColor="#C2A97C" />
+        </linearGradient>
+        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FFDD8A" />
+          <stop offset="100%" stopColor="#F2A93C" />
         </linearGradient>
       </defs>
       <rect x="2" y="2" width="60" height="60" rx="16" fill={`url(#${id}-bg)`} />
@@ -3212,9 +3216,7 @@ function ExploreTab({
                           transition={TAP_SPRING}
                           href={waHref(
                             '+306974519816',
-                            language === 'el'
-                              ? 'Γεια σας! Θα ήθελα να κλείσω μεταφορά από/προς το αεροδρόμιο/λιμάνι. Στοιχεία πτήσης:\n• Αριθμός Πτήσης:\n• Ώρα Άφιξης:\n• Αριθμός Επιβατών:'
-                              : 'Hi! I would like to book an airport/port transfer. Here are my flight details:\n• Flight Number:\n• Arrival Time:\n• Number of Passengers:'
+                            `Hello! I would like to book an airport/port transfer.\n\n• Pickup Location (Airport/Port/Other):\n• Destination (Accommodation/Address):\n• Flight / Ferry Number:\n• Date & Arrival Time:\n• Number of Passengers:\n• Number of Luggage:\n• Baby / Child Seat needed? (Yes/No & Age):`
                           )}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -3229,7 +3231,8 @@ function ExploreTab({
                           transition={TAP_SPRING}
                           href={mailHref(
                             'www.sait.solutions@gmail.com',
-                            language === 'el' ? 'Αίτημα Μεταφοράς (Hostkey Transfer)' : 'Airport / Port Transfer Request (Hostkey)'
+                            'Hostkey Transfer Request',
+                            `Hello,\n\nI would like to request an airport/port transfer for my upcoming stay.\n\nTransfer Details:\n• Pickup Location (Airport/Port/Other):\n• Destination (Accommodation/Address):\n• Flight / Ferry Number:\n• Date & Arrival Time:\n• Number of Passengers:\n• Number of Luggage:\n• Baby / Child Seat needed? (Yes/No & Age):\n\nThank you!`
                           )}
                           className="flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-sky-700 transition-colors hover:bg-sky-50/50"
                         >
@@ -3617,7 +3620,7 @@ export default function DashboardGrid({ property, places, onOpenAIChat }: Dashbo
         </div>
       )}
 
-      <AnimatePresence mode="wait" custom={tabState.direction} initial={false}>
+  <AnimatePresence mode="wait" custom={tabState.direction} initial={false}>
         <motion.div
           key={tabState.tab}
           custom={tabState.direction}
