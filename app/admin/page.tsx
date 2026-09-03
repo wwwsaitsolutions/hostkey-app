@@ -31,6 +31,7 @@ import {
   Crown,
   Check,
   User,
+  CreditCard,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -191,10 +192,6 @@ const SECTIONS: { key: SectionKey; label: string; icon: typeof HomeIcon }[] = [
 
 const FIELD_CLASS =
   'w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-stone-900 shadow-sm outline-none transition-colors placeholder:text-stone-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20';
-
-/* ------------------------------------------------------------------ */
-/* Βοηθητικές Συναρτήσεις                                             */
-/* ------------------------------------------------------------------ */
 
 function emptyForm(): PropertyFormState {
   return {
@@ -476,10 +473,6 @@ function formToPayload(form: PropertyFormState, userId?: string | null): Record<
 
   return payload;
 }
-
-/* ------------------------------------------------------------------ */
-/* Πεδία Φόρμας & Upload                                              */
-/* ------------------------------------------------------------------ */
 
 function FieldLabel({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
@@ -805,6 +798,10 @@ export default function AdminPage() {
   const [agreedTerms, setAgreedTerms] = useState<boolean>(true);
   const [showProModal, setShowProModal] = useState<string | null>(null);
 
+  // --- Stripe Pro Subscription State ---
+  const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month');
+  const [redirectingStripe, setRedirectingStripe] = useState(false);
+
   const [places, setPlaces] = useState<PlaceItem[]>([]);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<PlaceCategory | 'all'>('all');
@@ -1114,6 +1111,37 @@ export default function AdminPage() {
     },
     [loadPlaces, pushToast],
   );
+
+  const handleStripeCheckout = async () => {
+    if (!form.id) {
+      pushToast('error', 'Παρακαλώ επιλέξτε ή αποθηκεύστε πρώτα το κατάλυμά σας.');
+      return;
+    }
+
+    setRedirectingStripe(true);
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId: form.id,
+          hostEmail: user?.email || form.host_email || 'host@example.com',
+          hostId: user?.id || 'demo-host-id',
+          billingInterval,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || 'Αδυναμία δημιουργίας συνεδρίας πληρωμής.');
+      }
+    } catch (err: any) {
+      pushToast('error', err.message || 'Σφάλμα σύνδεσης με το Stripe.');
+      setRedirectingStripe(false);
+    }
+  };
 
   const set = useCallback(<K extends keyof PropertyFormState>(key: K) => {
     return (value: PropertyFormState[K]) => {
@@ -1739,7 +1767,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Pro Αναβάθμιση Modal */}
+      {/* Pro Αναβάθμιση Modal - Συνδεδεμένο με Stripe Checkout */}
       {showProModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
@@ -1747,7 +1775,12 @@ export default function AdminPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
                 <Crown className="h-5 w-5" />
               </div>
-              <button type="button" onClick={() => setShowProModal(null)} className="text-stone-400 hover:text-stone-700">
+              <button
+                type="button"
+                onClick={() => setShowProModal(null)}
+                disabled={redirectingStripe}
+                className="text-stone-400 hover:text-stone-700 disabled:opacity-50"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1762,23 +1795,67 @@ export default function AdminPage() {
               <span className="flex items-center gap-2 font-medium"><Check className="h-3.5 w-3.5 text-emerald-600" /> Άμεση ενεργοποίηση χωρίς συμβόλαια</span>
             </div>
 
+            {/* Επιλογή Πλάνου Χρέωσης */}
+            <div className="mt-5 flex flex-col gap-2.5">
+              <p className="text-xs font-bold uppercase tracking-wider text-stone-500">Επιλέξτε Πλάνο Συνδρομής:</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setBillingInterval('month')}
+                  className={`flex flex-col rounded-2xl border p-3.5 text-left transition-all ${
+                    billingInterval === 'month'
+                      ? 'border-emerald-600 bg-emerald-50/60 ring-2 ring-emerald-600/20'
+                      : 'border-stone-200 bg-white hover:border-stone-300'
+                  }`}
+                >
+                  <span className="text-xs font-semibold text-stone-500">Μηνιαίο</span>
+                  <span className="mt-1 text-lg font-bold text-stone-900">€4.99 <span className="text-xs font-normal text-stone-500">/μήνα</span></span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBillingInterval('year')}
+                  className={`relative flex flex-col rounded-2xl border p-3.5 text-left transition-all ${
+                    billingInterval === 'year'
+                      ? 'border-emerald-600 bg-emerald-50/60 ring-2 ring-emerald-600/20'
+                      : 'border-stone-200 bg-white hover:border-stone-300'
+                  }`}
+                >
+                  <span className="absolute -top-2.5 right-2 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-extrabold text-white shadow-sm">
+                    Έκπτωση 33%
+                  </span>
+                  <span className="text-xs font-semibold text-stone-500">Ετήσιο</span>
+                  <span className="mt-1 text-lg font-bold text-stone-900">€40.00 <span className="text-xs font-normal text-stone-500">/έτος</span></span>
+                </button>
+              </div>
+            </div>
+
             <div className="mt-6 flex gap-3">
               <button
                 type="button"
                 onClick={() => setShowProModal(null)}
-                className="flex-1 rounded-xl border border-stone-200 py-2.5 text-xs font-bold text-stone-700 hover:bg-stone-50"
+                disabled={redirectingStripe}
+                className="flex-1 rounded-xl border border-stone-200 py-2.5 text-xs font-bold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
               >
-                Κλείσιμο
+                Ακύρωση
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  pushToast('success', 'Το αίτημά σας καταγράφηκε! Θα επικοινωνήσουμε μαζί σας.');
-                  setShowProModal(null);
-                }}
-                className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700"
+                onClick={handleStripeCheckout}
+                disabled={redirectingStripe}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 disabled:opacity-60"
               >
-                Ενεργοποίηση Pro
+                {redirectingStripe ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Μετάβαση…</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4" />
+                    <span>Πληρωμή Stripe</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
