@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
+// Φόρτωση μεταβλητών περιβάλλοντος από .env.local
 const envPath = path.resolve(process.cwd(), '.env.local');
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, 'utf8');
@@ -25,450 +26,443 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 1. Επίσημο πλήρες λεξικό ονομάτων στα Ελληνικά για τις παραλίες
-const EXACT_GREEK_NAMES = {
-  'matala': 'Μάταλα',
-  'agia pelagia': 'Αγία Πελαγία',
-  'zakros': 'Ζάκρος',
-  'elafonissi': 'Ελαφονήσι',
-  'elafonisi': 'Ελαφονήσι',
-  'balos': 'Μπάλος',
-  'falassarna': 'Φαλάσαρνα',
-  'falasarna': 'Φαλάσαρνα',
-  'paleohora': 'Παλαιόχωρα',
-  'fragokastelo': 'Φραγκοκάστελλο',
-  'fragkokastelo': 'Φραγκοκάστελλο',
-  'gavdos': 'Γαύδος',
-  'loutro': 'Λουτρό',
-  'agia roumeli': 'Αγία Ρουμέλη',
-  'platanias': 'Πλατανιάς',
-  'sougia': 'Σούγια',
-  'georgioupolis': 'Γεωργιούπολη',
-  'kedrodasos': 'Κεδρόδασος',
-  'aspri limni': 'Άσπρη Λίμνη',
-  'lakki': 'Λακκί',
-  'orthi ammos': 'Ορθή Άμμος',
-  'koutelos': 'Κούτελος',
-  'filaki': 'Φυλακή',
-  'agios haralabos': 'Άγιος Χαράλαμπος',
-  'vrissi': 'Βρύση (Χώρα Σφακίων)',
-  'iligas': 'Ίλιγγας',
-  'glika nera': 'Γλυκά Νερά',
-  'finikas': 'Φοίνικας',
-  'marmara': 'Μάρμαρα',
-  'agios pavlos': 'Άγιος Παύλος',
-  'kalogeros': 'Καλόγερος',
-  'fournoti': 'Φουρνωτή',
-  'domata': 'Δώματα',
-  'tripiti': 'Τρυπητή',
-  'lissos': 'Λισσός',
-  'anydri': 'Ανύδροι (Γιαλισκάρι)',
-  'gialiskari': 'Γιαλισκάρι',
-  'keratides': 'Κερατίδες',
-  'karavopetra': 'Καραβόπετρα',
-  'grammeno': 'Γραμμένο',
-  'koundoura': 'Κουνδούρα',
-  'krios': 'Κριός',
-  'viena': 'Βιένα',
-  'voulolimni': 'Βουλολίμνη',
-  'stomio': 'Στόμιο',
-  'livadia': 'Λιβάδια',
-  'keramoti': 'Κεραμωτή',
-  'gylisma': 'Γύλισμα',
-  'platanakia': 'Πλατανάκια',
-  'sfinari': 'Σφηνάρι',
-  'kokkina gkremna': 'Κόκκινα Γκρεμνά',
-  'gramvousa': 'Γραμβούσα',
-  'meri pigadi': 'Μέρι Πηγάδι',
-  'kaliviani': 'Καλυβιανή',
-  'vigglia': 'Βίγλια',
-  'damialis': 'Νταμιalias',
-  'mavros molos': 'Μαύρος Μώλος',
-  'korfalonas': 'Κορφαλώνας',
-  'drapanias': 'Δραπανιάς',
-  'nopigia': 'Νωπήγεια',
-  'ravdoucha': 'Ραβδούχα',
-  'menies': 'Μένιες (Δίκτυννα)',
-  'afrata': 'Αφράτα',
-  'kolimbari': 'Κολυμβάρι',
-  'rapaniana': 'Ραπανιανά',
-  'tavronitis': 'Ταυρωνίτης',
-  'maleme': 'Μάλεμε',
-  'gerani': 'Γεράνι',
-  'agia marina': 'Αγία Μαρίνα',
-  'stalos': 'Σταλός',
-  'kalamaki': 'Καλαμάκι',
-  'agii apostoli': 'Άγιοι Απόστολοι',
-  'chrissi akti': 'Χρυσή Ακτή',
-  'nea chora': 'Νέα Χώρα',
-  'chania': 'Κουμ Καπί',
-  'agios onoufrios': 'Άγιος Ονούφριος',
-  'kalathas': 'Καλαθάς',
-  'tersanas': 'Τερσανάς',
-  'maherida': 'Μαχαιρίδα',
-  'stavros': 'Σταυρός',
-  'stefanou': 'Σεϊτάν Λιμάνια (Στεφάνου)',
-  'marathi': 'Μαράθι',
-  'loutraki': 'Λουτράκι',
-  'kalami': 'Καλάμι',
-  'kalives': 'Καλύβες',
-  'almyrida': 'Αλμυρίδα',
-  'koutalis': 'Κούταλης',
-  'ombrosgialos': 'Ομπρόσγιαλος',
-  'lake kournas': 'Λίμνη Κουρνά',
-  'preveli': 'Πρέβελη',
-  'agia galini': 'Αγία Γαλήνη',
-  'plakias': 'Πλακιάς',
-  'korakas': 'Κόρακας (Ροδάκινο)',
-  'rethymnon city': 'Παραλία Ρεθύμνου (Πόλη)',
-  'rethymno city': 'Παραλία Ρεθύμνου (Πόλη)',
-  'panormo': 'Πάνορμος',
-  'panormos': 'Πάνορμος',
-  'bali': 'Μπαλί',
-  'triopetra': 'Τριόπετρα',
-  'sandhills': 'Αμμόλοφοι Αγίου Παύλου (Sandhills)',
-  'ligres': 'Λίγκρες',
-  'kerames': 'Κεραμές',
-  'skinaria': 'Σχοινάρια',
-  'ammoudi': 'Αμμούδι',
-  'damnoni': 'Δαμνόνι',
-  'paximadia': 'Παξιμάδια',
-  'lihnistis': 'Λιχνιστής',
-  'louros (prasonisi)': 'Λούρος (Πρασονήσι)',
-  'agia fotini': 'Αγία Φωτεινή',
-  'pirgos': 'Πύργος',
-  'gialopotama': 'Γιαλοπόταμα',
-  'drymiskos': 'Δρύμισκος',
-  'fotinari': 'Φωτεινάρι',
-  'souda': 'Σούδα Πλακιά',
-  'pefkias': 'Πευκιάς',
-  'klimata': 'Κλήματα',
-  'peristeres': 'Περιστερές',
-  'episkopi': 'Επισκοπή',
-  'koumbes': 'Κουμπές',
-  'pervolia': 'Περιβόλια',
-  'misiria': 'Μισίρια',
-  'platanes': 'Πλατανές',
-  'adelianos': 'Αδελιανός Κάμπος',
-  'pigianos kambos': 'Πηγιανός Κάμπος',
-  'skaleta': 'Σκαλέτα',
-  'spilies': 'Σπηλιές',
-  'geropotamos': 'Γεροπόταμος',
-  'skepasti': 'Σκεπαστή',
-  'glaros': 'Γλάρος',
-  'kalo horafi': 'Καλό Χωράφι',
-  'alyki': 'Αλυκή',
-  'pera galini': 'Πέρα Γαλήνη',
-  'hersonissos': 'Χερσόνησος',
-  'malia': 'Μάλια',
-  'stalida': 'Σταλίδα',
-  'gouves': 'Γούβες',
-  'ammoudara': 'Αμμουδάρα',
-  'kokkini hani': 'Κοκκίνη Χάνι',
-  'tsoutsouras': 'Τσούτσουρας',
-  'agiofarago': 'Αγιοφάραγγο',
-  'aspes': 'Άσπες (Μαύρη Παραλία)',
-  'vathy': 'Βαθύ',
-  'trafoulas': 'Τράφουλας',
-  'lendas': 'Λέντας',
-  'agios nikitas': 'Άγιος Νικήτας',
-  'listis': 'Ληστής',
-  'komos': 'Κομμός',
-  'sarandaris': 'Σαραντάρης (Λιμανάκια)',
-  'potamos': 'Ποταμός Μαλίων',
-  'agios georgios': 'Άγιος Γεώργιος (Νήσος Ντία)',
-  'tertsa': 'Τέρτσα',
-  'sidonia': 'Σιδωνία (Ψαρή Φοράδα)',
-  'faflagos': 'Φάφλαγκος',
-  'arvi': 'Άρβη',
-  'armenopetra': 'Αρμενόπετρα',
-  'keratokambos': 'Κερατόκαμπος',
-  'kastri': 'Καστρί',
-  'dermatos': 'Δέρματος',
-  'krassas': 'Κρασσάς',
-  'maridaki': 'Μαριδάκι',
-  'skiadaki': 'Σκιαδάκι',
-  'kaminaki': 'Καμινάκι',
-  'voidomatis': 'Βοϊδομάτης',
-  'tris ekklissies': 'Τρεις Εκκλησιές',
-  'ornios': 'Όρνιος',
-  'koudoumas': 'Κουδουμάς',
-  'agios antonios': 'Άγιος Αντώνιος',
-  'agios ioannis': 'Άγιος Ιωάννης',
-  'salamias': 'Σαλαμιάς',
-  'katarti': 'Κατάρτι',
-  'loutra': 'Λουτρά',
-  'dyskos': 'Δυσκός (Δυτικό)',
-  'tsigounas': 'Τσίγκουνας',
-  'psili ammos': 'Ψιλή Άμμος',
-  'platia peramata': 'Πλατιά Περάματα',
-  'krigi': 'Κρίγη',
-  'chrysostomos': 'Χρυσόστομος (Λασαία)',
-  'kali limenes': 'Καλοί Λιμένες',
-  'martsalo': 'Μάρτσαλο',
-  'red beach (kokkini ammos)': 'Κόκκινη Άμμος (Red Beach)',
-  'kokkinos pirgos': 'Κόκκινος Πύργος',
-  'korakia': 'Κορακιά',
-  'fodele': 'Φόδελε',
-  'mononaftis': 'Μονοναύτης',
-  'psaromoura': 'Ψαρομούρα',
-  'ligaria': 'Λυγαριά',
-  'madés': 'Μαδέ',
-  'fraskia': 'Φρασκιά',
-  'paliokastro': 'Παλαιόκαστρο',
-  'pantanassa': 'Παντάνασσα',
-  'ellinoperamata': 'Ελληνοπεράματα',
-  'karteros': 'Καρτερός',
-  'vathianos kambos': 'Βαθειανός Κάμπος',
-  'gournes': 'Γούρνες',
-  'aposelemis': 'Αποσελέμης',
-  'analipsis': 'Ανάληψη',
-  'anissaras': 'Ανισσαράς',
-  'drapanos': 'Δράπανος',
-  'agia varvara': 'Αγία Βαρβάρα',
-  'panagia': 'Παναγιά (Νήσος Ντία)',
-  'sitia': 'Σητεία',
-  'ierapetra central': 'Ιεράπετρα (Αποβάθρα)',
-  'vai': 'Βάι (Φοινικόδασος)',
-  'chrissi': 'Χρυσή (Γαϊδουρονήσι)',
-  'makrigialos': 'Μακρύς Γιαλός',
-  'myrtos': 'Μύρτος',
-  'sissi': 'Σίσι',
-  'itanos': 'Ίτανος (Ερημούπολη)',
-  'karoumes': 'Καρούμες',
-  'xerokambos': 'Ξερόκαμπος',
-  'gargadoros': 'Γαργαδόρος',
-  'voulisma': 'Βούλισμα',
-  'vatos': 'Βάτος',
-  'sarikambos': 'Σαρικόκαμπος',
-  'nea anatoli': 'Νέα Ανατολή',
-  'gra ligia': 'Γρα Λυγιά',
-  'ierapetra long beach': 'Μεγάλη Παραλία Ιεράπετρας',
-  'katharades': 'Καθαράδες',
-  'koutsounari': 'Κουτσουνάρι (Μεγάλη Παραλία)',
-  'kakia skala': 'Κακιά Σκάλα',
-  'ferma': 'Φέρμα',
-  'agia fotia': 'Αγία Φωτιά',
-  'ahlia': 'Αχλιά',
-  'mavros kolimbos': 'Μαύρος Κόλυμπος',
-  'maheridia': 'Μαχαιρίδια',
-  'koutsouras': 'Κουτσουράς',
-  'kalamokanias': 'Καλαμοκανιάς',
-  'diaskari': 'Διασκάρι',
-  'lagada': 'Λαγκάδα',
-  'psalidia': 'Ψαλίδια',
-  'kalo nero': 'Καλό Νερό',
-  'votsalaki': 'Βοτσαλάκι',
-  'goudouras': 'Γούδουρας',
-  'livari': 'Λιβάρι',
-  'tihida': 'Τιχίδα',
-  'agia irini': 'Αγία Ειρήνη',
-  'mazida ammos': 'Μάζιδα Άμμος',
-  'alona (krinakia)': 'Άλωνα (Κρινάκια)',
-  'skinias': 'Σκινιάς',
-  'skaria': 'Σκαριά',
-  'hiona': 'Χιώνα',
-  'kouremenos': 'Κουρεμένος',
-  'maridati': 'Μαριδάτι',
-  'kedromouri': 'Κεδρόμουρι',
-  'tenda': 'Τέντα',
-  'cape sidero': 'Κάβο Σίδερο',
-  'platani': 'Πλατάνι',
-  'papadiokambos': 'Παπαδιόκαμπος',
-  'charkomatas': 'Χαρκωματάς',
-  'richtis': 'Ρίχτης',
-  'kalavros': 'Κάλαβρος',
-  'mochlos': 'Μόχλος',
-  'tholos': 'Θόλος Καβουσίου',
-  'agriomandra': 'Αγριομάντρα',
-  'pahia ammos': 'Παχεία Άμμος',
-  'gournia': 'Γουρνιά',
-  'pilos': 'Πήλος',
-  'ag. panteleimon': 'Άγιος Παντελεήμων (Ίστρον)',
-  'almiros': 'Αλμυρός',
-  'ammos': 'Άμμος',
-  'kitroplatia': 'Κιτροπλατεία',
-  'havania': 'Χαβάνια',
-  'katsikia': 'Κατσίκια',
-  'pigaidakia': 'Πηγαϊδάκια (Πόρτο Ελούντα)',
-  'kolokytha': 'Κολοκύθα',
-  'elounda (shisma)': 'Ελούντα (Σχίσμα)',
-  'tsifliki': 'Τσιφλίκι',
-  'plaka': 'Πλάκα Ελούντας',
-  'chomatistra': 'Χωματίστρα',
-  'kato selles': 'Κάτω Σέλλες',
-  'vlyhadia': 'Βλυχάδια',
-  'skotini': 'Σκοτεινή',
-  'anogia': 'Ανώγεια Μιραμπέλου',
-  'milatos': 'Μίλατος',
+// 1. Πλήρες Λεξικό Επίσημων Ελληνικών Ονομάτων ανά ID / Name
+const GREEK_NAMES_MAP = {
+  // Χανιά
+  'elafonissi-beach': 'Ελαφονήσι',
+  'balos-lagoon-beach': 'Μπάλος (Λιμνοθάλασσα)',
+  'falassarna-beach': 'Φαλάσαρνα',
+  'kedrodasos-beach-elafonisi': 'Κεδρόδασος',
+  'stefanou-beach-seitan-limania': 'Σεϊτάν Λιμάνια (Στεφάνου)',
+  'pahia-ammos-beach-paleohora': 'Παχιά Άμμος (Παλαιόχωρα)',
+  'fragkokastelo-beach': 'Φραγκοκάστελλο',
+  'gavdos-beaches': 'Γαύδος (Σαρακήνικο & Αϊ Γιάννης)',
+  'loutro-sfakia': 'Λουτρό',
+  'loutro-beaches-sfakia': 'Λουτρό',
+  'agia-roumeli-beach-sfakia': 'Αγία Ρουμέλη',
+  'platanias-beach': 'Πλατανιάς',
+  'sougia-beach': 'Σούγια',
+  'georgioupolis-beaches-chania-kavros': 'Γεωργιούπολη',
+  'aspri-limni-beach': 'Άσπρη Λίμνη',
+  'lakki-beach-rodakino-fragokastelo': 'Λακκί (Φραγκοκάστελλο)',
+  'orthi-ammos-fragkokastelo': 'Ορθή Άμμος',
+  'koutelos-beach-sfakia': 'Κούτελος',
+  'filaki-beach-sfakia': 'Φυλακή (Σφακιά)',
+  'agios-charalambos-ammoudi-sfakia': 'Άγιος Χαράλαμπος',
+  'chora-sfakia-beaches-vrissi': 'Βρύση (Χώρα Σφακίων)',
+  'chora-sfakia-iligas-beach': 'Ίλιγγας',
+  'glika-nera-beach-sfakia': 'Γλυκά Νερά',
+  'likkos-finikas-loutro': 'Φοίνικας & Λύκος',
+  'marmara-beach,-sfakia': 'Μάρμαρα',
+  'agios-pavlos-beach,-selouda-sfakia': 'Άγιος Παύλος (Σφακιά)',
+  'kalogeros-beach,-sfakia': 'Καλόγερος',
+  'fournoti-beach-sfakia': 'Φουρνωτή',
+  'domata-beach-sfakia': 'Δώματα',
+  'tripiti-sendoni-beach-sfakia': 'Τρυπητή',
+  'lissos-beach': 'Λισσός',
+  'gialiskari-beach': 'Γιαλισκάρι (Ανύδροι)',
+  'keratides-halikia-beach-paleohora': 'Κερατίδες (Χαλίκια)',
+  'karavopetra-coves-paleohora-beach-paleohora': 'Καραβόπετρα',
+  'grammeno-beaches-paleohora': 'Γραμμένο',
+  'koudoura-beach-agia-kyriaki-paleochora': 'Κουνδούρα',
+  'krios-beach-koudoura-paleochora': 'Κριός',
+  'viena-krios-lake-beach': 'Βιένα',
+  'voulolimni-beach': 'Βουλολίμνη',
+  'stomio-beach-chrissoskalitissa-vathi': 'Στόμιο',
+  'livadia-beaches-kambos': 'Λιβάδια (Κάμπος)',
+  'keramoti-beach': 'Κεραμωτή',
+  'gylisma-beach': 'Γύλισμα',
+  'platanakia-beach': 'Πλατανάκια',
+  'sfinari-beach': 'Σφηνάρι',
+  'kokkina-grema-beach': 'Κόκκινα Γκρεμνά',
+  'gramvousa-islet-beach': 'Γραμβούσα',
+  'meri-pigadi-beach-gramvousa': 'Μέρι Πηγάδι',
+  'kaliviani-beach-kissamos-gramvousa': 'Καλυβιανή',
+  'vigglia-beach-kissamos-gramvousa': 'Βίγλια',
+  'damialis-beach-kissamos': 'Νταμιάλης',
+  'mavros-molos-beach-kissamos': 'Μαύρος Μώλος',
+  'livadia-beach,-kissamos': 'Λιβάδια Κισσάμου',
+  'korfalonas-beach-kissamos': 'Κορφαλώνας',
+  'drapanias-beach-kissamos': 'Δραπανιάς',
+  'nopigia-beach-kissamos': 'Νωπήγεια',
+  'ravdoucha-beach': 'Ραβδούχα',
+  'agios-pavlos-beach-ravdoucha': 'Άγιος Παύλος (Ραβδούχα)',
+  'menies-beach-diktynna': 'Μένιες (Δίκτυννα)',
+  'afrata-beach-kolimbari': 'Αφράτα',
+  'kolimbari-beach': 'Κολυμβάρι',
+  'rapaniana-beach': 'Ραπανιανά',
+  'tavronitis-beach': 'Ταυρωνίτης',
+  'maleme-beach': 'Μάλεμε',
+  'gerani-beach': 'Γεράνι',
+  'agia-marina-beach': 'Αγία Μαρίνα',
+  'stalos-beach': 'Σταλός',
+  'kalamaki-beach-glaros-galatas': 'Καλαμάκι (Γαλατάς)',
+  'agii-apostoli-beaches-chania': 'Άγιοι Απόστολοι',
+  'chrissi-akti-beach-golden-chania': 'Χρυσή Ακτή',
+  'nea-chora-beaches': 'Νέα Χώρα',
+  'koum-kapi-beach-chania': 'Κουμ Καπί',
+  'agios-onoufrios-beach': 'Άγιος Ονούφριος',
+  'kalathas-beach-chania': 'Καλαθάς',
+  'tersanas-beach': 'Τερσανάς',
+  'maherida-beach': 'Μαχαιρίδα',
+  'stavros-beach': 'Σταυρός (Ζορμπάς)',
+  'marathi-beach-akrotiri-chania': 'Μαράθι',
+  'loutraki-beach-akrotiri-chania': 'Λουτράκι',
+  'kalami-beach-souda-chania': 'Καλάμι',
+  'kalives-beaches-chania': 'Καλύβες',
+  'almyrida-beach-plaka-kalives': 'Αλμυρίδα',
+  'koutalis-beach-plaka': 'Κούταλης',
+  'ombrosgialos-beach-paleloni': 'Ομπρόσγιαλος',
+  'kournas-lake-beach-chania': 'Λίμνη Κουρνά',
+
+  // Ρέθυμνο
+  'preveli-beach': 'Πρέβελη (Φοινικόδασος)',
+  'agia-galini-beaches': 'Αγία Γαλήνη',
+  'plakias-beach': 'Πλακιάς',
+  'korakas-beach-rodakino': 'Κόρακας (Ροδάκινο)',
+  'rethymnon-city-beach': 'Παραλία Ρεθύμνου (Πόλη)',
+  'panormo-beaches-rethymnon': 'Πάνορμος',
+  'bali-beaches': 'Μπαλί',
+  'triopetra-beach': 'Τριόπετρα',
+  'agios-pavlos-beach-rethymnon': 'Άγιος Παύλος',
+  'sandhills-agios-pavlos-beach-rethymnon': 'Αμμόλοφοι Αγίου Παύλου',
+  'ligres-beach-triopetra-rethymnon': 'Λίγκρες',
+  'pahia-ammos-beach-kerames-rethymnon': 'Κεραμές (Παχιά Άμμος)',
+  'skinaria-beach': 'Σχοινάρια',
+  'ammoudi-beaches-plakias': 'Αμμούδι',
+  'damnoni-beach-plakias': 'Δαμνόνι',
+  'paximadia-islets-agia-galini': 'Νήσοι Παξιμάδια',
+  'agios-georgios-agia-galini-beaches': 'Άγιος Γεώργιος (Λιχνιστής)',
+  'louros-beaches-agia-galini': 'Λούρος (Πρασονήσι)',
+  'agia-fotini-beach-kerames-rethymnon': 'Αγία Φωτεινή',
+  'pirgos-beach-kerames-gialopotama': 'Πύργος (Κεραμές)',
+  'gialopotama-beach-kerames-rethymnon': 'Γιαλοπόταμα',
+  'drymiskos-beaches-ammoudi-rethymnon': 'Δρύμισκος',
+  'fotinari-beach-plakias': 'Φωτεινάρι',
+  'souda-beach-plakias': 'Σούδα Πλακιά',
+  'pefkias-beaches-rodakino': 'Πευκιάς',
+  'klimata-beach-rodakino': 'Κλήματα',
+  'peristeres-beach-rodakino': 'Περιστερές',
+  'agia-marina-beach-rodakino': 'Αγία Μαρίνα (Ροδάκινο)',
+  'episkopi-beach-rethymno-petres': 'Επισκοπή',
+  'kamari-beach-gerani-rethymno': 'Γεράνι (Καμάρι)',
+  'koumbes-beach-rethymno': 'Κουμπές',
+  'pervolia-beach-rethymnon': 'Περιβόλια',
+  'misiria-beach-rethymnon': 'Μισίρια',
+  'platanes-beach-rethymnon': 'Πλατανές',
+  'adelianos-kambos-beach-rethymnon': 'Αδελιανός Κάμπος',
+  'pigianos-kambos-beaches-rethymnon': 'Πηγιανός Κάμπος',
+  'skaleta-beaches-stavromenos-sfakaki': 'Σκαλέτα',
+  'spilies-beach-latzimas-geropotamos': 'Σπηλιές',
+  'geropotamos-beach-rethymnon': 'Γεροπόταμος',
+  'skepasti-beach-panormo-rethymnon': 'Σκεπαστή',
+  'glaros-beaches-charakas': 'Γλάρος',
+  'kalo-horafi-beach-charakas-sisses': 'Καλό Χωράφι',
+  'almirida-beach-sisses': 'Αλυκή (Σίσες)',
+  'pera-galini-beach': 'Πέρα Γαλήνη',
+
+  // Ηράκλειο
+  'matala-beach': 'Μάταλα',
+  'agia-pelagia-beach': 'Αγία Πελαγία',
+  'hersonissos-beaches': 'Χερσόνησος (Λιμανάκια)',
+  'malia-beach': 'Μάλια',
+  'stalida-beach': 'Σταλίδα',
+  'gouves-beaches': 'Γούβες',
+  'ammoudara-beach-gazi': 'Αμμουδάρα',
+  'kokkini-hani-beaches': 'Κοκκίνη Χάνι',
+  'tsoutsouras-beach': 'Τσούτσουρας',
+  'agiofarago-beach': 'Αγιοφάραγγο',
+  'aspes-black-beach': 'Άσπες (Μαύρη Παραλία)',
+  'vathi-beach-asterousia': 'Βαθύ (Αστερούσια)',
+  'trafoulas-beach-lentas': 'Τράφουλας',
+  'lendas-beach': 'Λέντας',
+  'agios-nikitas-beach': 'Άγιος Νικήτας',
+  'listis-beach-keratokambos': 'Ληστής',
+  'komos-beach': 'Κομμός',
+  'sarandaris-beaches-hersonissos': 'Σαραντάρης',
+  'potamos-beach-malia': 'Ποταμός Μαλίων',
+  'agios-georgios-beach-dia': 'Άγιος Γεώργιος (Ντία)',
+  'tertsa-beach': 'Τέρτσα',
+  'sidonia-beach-psari-forada': 'Σιδωνία (Ψαρή Φοράδα)',
+  'faflagos-beach-latomia': 'Φάφλαγκος',
+  'arvi-beach': 'Άρβη',
+  'armenopetra-beaches-keratokambos': 'Αρμενόπετρα',
+  'keratokambos-beach': 'Κερατόκαμπος',
+  'kastri-beaches-keratokambos': 'Καστρί',
+  'dermatos-beach-tsoutsouras': 'Δέρματος',
+  'krassas-beach-tsoutsouras': 'Κρασσάς',
+  'maridaki-beach': 'Μαριδάκι',
+  'petrigiari-beach-kakoperatos-skiadaki': 'Σκιαδάκι',
+  'kaminaki-beach-mournia': 'Καμινάκι',
+  'voidomatis-beach-treis-ekklissies': 'Βοϊδομάτης',
+  'tris-ekklissies-beach': 'Τρεις Εκκλησιές',
+  'ornios-beaches-tris-ekklisies-pahia-ammos': 'Όρνιος',
+  'koudoumas-beach': 'Κουδουμάς',
+  'agios-antonios-beach-koudoumas': 'Άγιος Αντώνιος',
+  'agios-ioannis-beach-kapetaniana': 'Άγιος Ιωάννης (Καπετανιανά)',
+  'salamias-beach': 'Σαλαμιάς',
+  'katarti-beach': 'Κατάρτι',
+  'tripiti-beach-lentas': 'Τρυπητή (Λέντας)',
+  'loutra-beach-lentas': 'Λουτρά',
+  'dyskos-beach-dytiko-gerokambos-lendas': 'Δυσκός (Δυτικό)',
+  'tsigounas-beach-lentas': 'Τσίγκουνας',
+  'psili-ammos-beach-platia-peramata': 'Ψιλή Άμμος',
+  'platia-peramata-beach': 'Πλατιά Περάματα',
+  'krigi-beach-platia-peramata': 'Κρίγη',
+  'lassea-beach-chrysostomos': 'Χρυσόστομος (Λασαία)',
+  'kali-limenes-beach': 'Καλοί Λιμένες',
+  'martsalo-beach': 'Μάρτσαλο',
+  'red-beach-matala': 'Κόκκινη Άμμος (Red Beach)',
+  'kalamaki-beach-mesara': 'Καλαμάκι',
+  'kokkinos-pirgos-beach-tymbaki-mesara': 'Κόκκινος Πύργος',
+  'korakia-beach-fodele': 'Κορακιά',
+  'fodele-beach': 'Φόδελε',
+  'mononaftis-beach-agia-pelagia': 'Μονοναύτης',
+  'psaromoura-beach-agia-pelagia': 'Ψαρομούρα',
+  'ligaria-beach-agia-pelagia': 'Λυγαριά',
+  'madés-beach-ligaria': 'Μαδέ',
+  'fraskia-beach-panagia': 'Φρασκιά',
+  'paliokastro-beach': 'Παλαιόκαστρο',
+  'pantanassa-beach': 'Παντάνασσα',
+  'ellinoperamata-beach': 'Ελληνοπεράματα',
+  'karteros-beach': 'Καρτερός',
+  'vathianos-kambos-beaches': 'Βαθειανός Κάμπος',
+  'gournes-beaches': 'Γούρνες',
+  'aposelemis-beach-gouves': 'Αποσελέμης',
+  'analipsis-beaches-svouros': 'Ανάληψη',
+  'anissaras-beaches': 'Ανισσαράς',
+  'drapanos-beaches': 'Δράπανος',
+  'agia-varvara-beach': 'Αγία Βαρβάρα',
+  'panagia-beach,-dia': 'Παναγιά (Ντία)',
+
+  // Λασίθι
+  'zakros-beach': 'Κάτω Ζάκρος',
+  'sitia-beach': 'Σητεία',
+  'ierapetra-beach-apovathra': 'Ιεράπετρα (Αποβάθρα)',
+  'vai-beach-palm-grove': 'Βάι (Φοινικόδασος)',
+  'chrissi-island-beaches-ierapetra': 'Νήσος Χρυσή (Γαϊδουρονήσι)',
+  'makrigialos-beach': 'Μακρύς Γιαλός',
+  'myrtos-beach': 'Μύρτος',
+  'sissi-beaches': 'Σίσι',
+  'itanos-beaches-erimoupolis': 'Ίτανος (Ερημούπολη)',
+  'karoumes-beach': 'Καρούμες',
+  'xerokambos-beach': 'Ξερόκαμπος',
+  'gargadoros-beach-agios-nikolaos': 'Γαργαδόρος',
+  'voulisma-beach': 'Βούλισμα (Χρυσή Άμμος)',
+  'ammoudara-beach-agios-nikolaos': 'Αμμουδάρα (Άγιος Νικόλαος)',
+  'vatos-beach': 'Βάτος',
+  'sarikambos-beach-ierapetra-myrtos': 'Σαρικόκαμπος',
+  'ammoudares-beaches-ierapetra': 'Νέα Ανατολή',
+  'gra-ligia-beach-ierapetra': 'Γρα Λυγιά',
+  'ierapetra-long-beach-agios-andreas': 'Μεγάλη Παραλία Ιεράπετρας',
+  'katharades-beach-ierapetra': 'Καθαράδες',
+  'koutsounari-beach-ierapetra': 'Κουτσουνάρι',
+  'kakia-skala-beach-ierapetra': 'Κακιά Σκάλα',
+  'ferma-beaches-ierapetra': 'Φέρμα',
+  'agia-fotia-beach-ferma': 'Αγία Φωτιά',
+  'ahlia-beach': 'Αχλιά',
+  'mavros-kolimbos-beach': 'Μαύρος Κόλυμπος',
+  'maheridia-beaches-koutsouras': 'Μαχαιρίδια',
+  'koutsouras-beaches': 'Κουτσουράς',
+  'kalamokanias-beach': 'Καλαμοκανιάς',
+  'diaskari-beach-makrigialos': 'Διασκάρι',
+  'lagada-beach': 'Λαγκάδα',
+  'psalidia-beach': 'Ψαλίδια',
+  'kalo-nero-beaches': 'Καλό Νερό',
+  'kalami-beaches-goudouras': 'Καλάμι (Γούδουρας)',
+  'votsalaki-beach-goudouras': 'Βοτσαλάκι',
+  'goudouras-beach-asprolithos': 'Γούδουρας',
+  'livari-beach-atherinolakos-agia-triada': 'Λιβάρι',
+  'tihida-beach-agia-triada': 'Τιχίδα',
+  'agia-irini-beach-ziros': 'Αγία Ειρήνη',
+  'mazida-ammos-beach-xerokambos': 'Μάζιδα Άμμος',
+  'alona-beach-katsounaki-xerokambos': 'Άλωνα (Κρινάκια)',
+  'skinias-beaches-sitia': 'Σκινιάς',
+  'skaria-beaches-hiona': 'Σκαριά',
+  'hiona-beach-palekastro': 'Χιώνα (Παλαίκαστρο)',
+  'kouremenos-beach': 'Κουρεμένος (Windsurfing)',
+  'maridati-beach': 'Μαριδάτι',
+  'kedromouri-beach-vai-maridati': 'Κεδρόμουρι',
+  'tenda-beach-kavo-sidero': 'Τέντα',
+  'agios-isidoros-beach-kavo-sidero': 'Κάβο Σίδερο',
+  'agia-fotia-beaches-sitia': 'Αγία Φωτιά (Σητεία)',
+  'platani-beach-skopi': 'Πλατάνι',
+  'papadiokambos-beach-faneromeni': 'Παπαδιόκαμπος',
+  'charkomatas-beach-liopetro-papadiokambos': 'Χαρκωματάς',
+  'richtis-beach-kalavros': 'Ρίχτης (Φαράγγι)',
+  'gela-beach-kalavros': 'Κάλαβρος',
+  'mochlos-beaches': 'Μόχλος',
+  'tholos-beach-kavousi': 'Θόλος Καβουσίου',
+  'agriomandra-beach': 'Αγριομάντρα',
+  'pahia-ammos-beach': 'Παχεία Άμμος',
+  'gournia-beach': 'Γουρνιά',
+  'pilos-beach-istron': 'Πήλος',
+  'agios-panteleimon-beach-istron': 'Άγιος Παντελεήμων',
+  'vathy-beach-kritsa-agios-nikolaos': 'Βαθύ (Κριτσά)',
+  'almiros-beach-agios-nikolaos': 'Αλμυρός',
+  'ammos-beach-agios-nikolaos-marina': 'Άμμος (Μαρίνα)',
+  'kitroplatia-beach-agios-nikolaos': 'Κιτροπλατεία',
+  'ammoudi-beach-agios-nikolaos': 'Αμμούδι (Άγιος Νικόλαος)',
+  'havania-beach-agios-nikolaos': 'Χαβάνια',
+  'katsikia-beach-agios-nikolaos': 'Κατσίκια',
+  'pigaidakia-beaches-elounda-porto-elounda': 'Πηγαϊδάκια (Ελούντα)',
+  'kolokytha-beach-spinalonga-elounda': 'Κολοκύθα (Σπιναλόγκα)',
+  'elounda-beach-skisma': 'Ελούντα (Σχίσμα)',
+  'tsifliki-beach-dreros-elounda': 'Τσιφλίκι',
+  'plaka-beach-elounda': 'Πλάκα (Θέα Σπιναλόγκα)',
+  'chomatistra-beach-aforesmenos': 'Χωματίστρα',
+  'kato-selles-beaches-agios-antonios': 'Κάτω Σέλλες',
+  'vlyhadia-beaches-mirabelo': 'Βλυχάδια',
+  'skotini-beach-mirabelo-finokalias': 'Σκοτεινή',
+  'anogia-beaches-mirabelo': 'Ανώγεια Μιραμπέλου',
+  'milatos-beaches': 'Μίλατος',
 };
 
-// Ειδικές πλούσιες περιγραφές για γνωστές παραλίες
-const HIGHLIGHT_DESCRIPTIONS = {
-  'vai': {
-    el: 'Το μοναδικό αυτοφυές φοινικόδασος της Ευρώπης που καταλήγει σε μια πανέμορφη χρυσή αμμουδιά με ήρεμα καταγάλανα νερά.',
-    en: 'Europe’s only natural palm forest opening onto a gorgeous golden sand beach with calm azure waters.',
-    fr: 'La seule palmeraie naturelle d’Europe s’ouvrant sur une magnifique plage de sable doré et des eaux calmes.',
-    de: 'Europas einziger natürlicher Palmenwald, der an einen wunderschönen Sandstrand mit ruhigem Meer grenzt.',
-  },
-  'elafonissi': {
-    el: 'Διάσημη εξωτική παραλία με ροζ κοραλλιογενή άμμο, ρηχά τιρκουάζ νερά και προστατευόμενο φυσικό τοπίο Natura.',
-    en: 'World-famous exotic beach with pink coral sand, shallow turquoise waters, and protected Natura scenery.',
-    fr: 'Plage exotique mondialement connue avec son sable corallien rose et ses eaux turquoises peu profondes.',
-    de: 'Weltberühmter Traumstrand mit rosafarbenem Korallensand, seichtem Wasser und geschützter Natur.',
-  },
-  'balos': {
-    el: 'Εξωτική λιμνοθάλασσα απαράμιλλης ομορφιάς με λευκή και ροζ άμμο, ζεστά ρηχά νερά και εντυπωσιακό άγριο τοπίο.',
-    en: 'Breathtaking exotic lagoon with white and pink sand, warm shallow waters, and majestic wild scenery.',
-    fr: 'Lagune paradisiaque spectaculaire avec sable blanc-rosé, eaux tièdes et paysage sauvage.',
-    de: 'Atemberaubende Lagune mit weiß-rosa Sand, seichtem warmem Wasser und spektakulärer Landschaft.',
-  },
-  'falassarna': {
-    el: 'Απέραντη παραλία με ψιλή άμμο, κρυστάλλινα νερά, εξαιρετική οργάνωση και ένα από τα πιο φημισμένα ηλιοβασιλέματα.',
-    en: 'Vast golden sand beach with crystal waters, excellent beach bars, and one of the finest sunsets in the Mediterranean.',
-    fr: 'Immense plage de sable doré avec des eaux cristallines et l’un des plus beaux couchers de soleil de Crète.',
-    de: 'Riesiger Sandstrand mit glasklarem Wasser und einem der schönsten Sonnenuntergänge des Mittelmeers.',
-  },
-  'preveli': {
-    el: 'Μοναδική παραλία στο τέλος του Κουρταλιώτικου φαραγγιού, όπου το ποτάμι και το φοινικόδασος συναντούν το Λιβυκό Πέλαγος.',
-    en: 'Unique beach at the mouth of Kourtaliotiko gorge, where a freshwater river and palm forest meet the Libyan Sea.',
-    fr: 'Plage unique au débouché des gorges de Kourtaliotiko, où rivière et palmeraie se jettent dans la mer.',
-    de: 'Einzigartiger Strand an der Kourtaliotiko-Schlucht, wo ein Fluss und Palmenhain das Meer erreichen.',
-  },
-  'matala': {
-    el: 'Ιστορικός κολπίσκος με τις διάσημες ρωμαϊκές σπηλιές των χίπις, βαθιά καταγάλανα νερά και ζωντανή ατμόσφαιρα.',
-    en: 'Historic bay famous for its carved Roman caves, lively 1960s hippie heritage, and deep azure waters.',
-    fr: 'Baie historique réputée pour ses grottes romaines des hippies et ses eaux profondes et limpides.',
-    de: 'Historische Bucht, berühmt für ihre römischen Höhlen aus der Hippie-Ära und klares tiefblaues Wasser.',
-  },
-  'rethymnon city': {
-    el: 'Μεγάλη αμμώδης παραλία κατά μήκος της πόλης του Ρεθύμνου, πλήρως οργανωμένη με ναυαγοσώστες, beach bars και θαλάσσια σπορ.',
-    en: 'Wide sandy town beach stretching along Rethymno, fully organized with lifeguards, beach bars, and watersports.',
-    fr: 'Grande plage de sable le long de la ville de Réthymnon, aménagée avec maîtres-nageurs et bars de plage.',
-    de: 'Breiter Sandstrand entlang der Stadt Rethymno, bestens organisiert mit Rettungsschwimmern und Strandbars.',
-  },
-  'sandhills': {
-    el: 'Εντυπωσιακή παραλία με τεράστιους αμμόλοφους, βαθιά κρυστάλλινα νερά και μαγευτική θέα στο ηλιοβασίλεμα.',
-    en: 'Impressive beach with huge towering sand dunes and deep crystal waters, ideal for quiet relaxation.',
-    fr: 'Plage impressionnante bordée de gigantesques dunes de sable et d’eaux cristallines profondes.',
-    de: 'Spektakulärer Strand mit riesigen Sanddünen und tiefblauem Wasser, ideal für Ruhe und Entspannung.',
-  },
-};
+// 2. Εξειδικευμένες Τουριστικές Περιγραφές για ΚΑΘΕ τύπο και χαρακτηριστικό παραλίας
+function getSpecificDescription(b, greekName) {
+  const isFineSand = String(b.surface || '').toLowerCase().includes('fine sand');
+  const isSand = String(b.surface || '').toLowerCase().includes('sand');
+  const isPebble = String(b.surface || '').toLowerCase().includes('pebble');
 
-const REGIONS = {
-  chania: { el: 'Χανίων', en: 'Chania', fr: 'La Canée', de: 'Chania', base: 'Χανιά' },
-  rethymno: { el: 'Ρεθύμνου', en: 'Rethymno', fr: 'Réthymnon', de: 'Rethymno', base: 'Ρέθυμνο' },
-  heraklion: { el: 'Ηρακλείου', en: 'Heraklion', fr: 'Héraklion', de: 'Heraklion', base: 'Ηράκλειο' },
-  lasithi: { el: 'Λασιθίου', en: 'Lasithi', fr: 'Lassithi', de: 'Lasithi', base: 'Λασίθι' },
+  // Ειδικές περιπτώσεις ορόσημων
+  const id = b.id || '';
+  if (id.includes('elafonissi')) {
+    return {
+      el: 'Διάσημη εξωτική λιμνοθάλασσα με ροζ κοραλλιογενή άμμο, ρηχά τιρκουάζ νερά και προστατευόμενο τοπίο Natura 2000.',
+      en: 'World-famous exotic lagoon with pink coral sand, shallow crystal-clear turquoise waters, and protected Natura dunes.',
+      fr: 'Lagune exotique réputée pour son sable corallien rose et ses eaux turquoises peu profondes.',
+      de: 'Weltberühmte exotische Lagune mit rosa Korallensand, seichtem türkisem Wasser und geschützter Natur.',
+    };
+  }
+  if (id.includes('balos')) {
+    return {
+      el: 'Εμβληματική λιμνοθάλασσα απαράμιλλης φυσικής ομορφιάς με λευκή και ροζ άμμο, ζεστά ρηχά νερά και άγριο νησιωτικό τοπίο.',
+      en: 'Iconic wild lagoon with white and pink sand, warm shallow waters, and breathtaking island scenery.',
+      fr: 'Lagon sauvage spectaculaire au sable blanc-rosé, eaux tièdes et décor naturel grandiose.',
+      de: 'Spektakuläre Lagune mit weiß-rosa Sand, seichtem warmem Wasser und unberührter Natur.',
+    };
+  }
+  if (id.includes('falassarna')) {
+    return {
+      el: 'Απέραντη παραλία με χρυσή άμμο, πεντακάθαρα βαθιά νερά, οργανωμένα beach bars και το διασημότερο ηλιοβασίλεμα της δυτικής Κρήτης.',
+      en: 'Vast golden sand beach with pristine waters, lively beach bars, and the most renowned sunset in western Crete.',
+      fr: 'Immense plage de sable doré aux eaux cristallines, réputée pour ses couchers de soleil inoubliables.',
+      de: 'Breiter goldener Sandstrand mit glasklarem Wasser, Strandbars und spektakulären Sonnenuntergängen.',
+    };
+  }
+  if (id.includes('preveli')) {
+    return {
+      el: 'Μαγευτική παραλία στις εκβολές του ποταμού Μεγάλου Ποταμού, περιτριγυρισμένη από το δεύτερο μεγαλύτερο φοινικόδασος της Κρήτης.',
+      en: 'Enchanting beach at the mouth of the Kourtaliotiko gorge, framed by a lush natural palm grove and river.',
+      fr: 'Plage féerique au débouché des gorges, entourée d’une magnifique palmeraie naturelle et d’une rivière.',
+      de: 'Einzigartiger Strand mit Flussmündung, umgeben von einem üppigen natürlichen Palmenhain.',
+    };
+  }
+  if (id.includes('matala')) {
+    return {
+      el: 'Ιστορικός κολπίσκος με τις διάσημες λαξευτές ρωμαϊκές σπηλιές των χίπις, βαθιά καταγάλανα νερά και ζωντανή ατμόσφαιρα.',
+      en: 'Historic sheltered bay famous for its Roman cliffside caves, 1960s hippie heritage, and deep blue waters.',
+      fr: 'Baie historique renommée pour ses grottes troglodytiques et ses eaux profondes et limpides.',
+      de: 'Historische Bucht, berühmt für ihre römischen Wohnhöhlen und klares, tiefblaues Wasser.',
+    }
+  }
+  if (id.includes('vai-beach')) {
+    return {
+      el: 'Το μοναδικό αυτοφυές φοινικόδασος της Ευρώπης που καταλήγει σε μια πανέμορφη χρυσή αμμουδιά με ήρεμα κρυστάλλινα νερά.',
+      en: 'Europe’s only indigenous palm grove leading to a picturesque golden sand beach with calm waters.',
+      fr: 'L’unique palmeraie indigène d’Europe bordant une superbe plage de sable fin doré.',
+      de: 'Europas einziger natürlicher Palmenwald direkt an einem wunderschönen Sandstrand.',
+    };
+  }
+  if (id.includes('seitan-limania') || id.includes('stefanou')) {
+    return {
+      el: 'Στενός, εντυπωσιακός φιόρδ κολπίσκος σκαμμένος ανάμεσα σε κάθετους βράχους, με εκτυφλωτικά γαλαζοπράσινα νερά.',
+      en: 'Dramatic canyon-like cove tucked between towering cliffs, renowned for its glowing turquoise waters.',
+      fr: 'Crique spectaculaire taillée dans la roche aux eaux turquoises éclatantes.',
+      de: 'Spektakuläre Felsenschlucht-Bucht mit leuchtend türkisblauem Wasser.',
+    };
+  }
+  if (id.includes('sandhills')) {
+    return {
+      el: 'Εντυπωσιακή ακτή με τεράστιους αμμόλοφους, απόλυτη ηρεμία, βαθιά καταγάλανα νερά και μαγευτική θέα στο Λιβυκό.',
+      en: 'Dramatic beach dominated by towering sand dunes, peaceful serenity, and deep azure Libyan Sea waters.',
+      fr: 'Plage grandiose dominée par d’immenses dunes de sable, idéale pour la tranquillité.',
+      de: 'Eindrucksvoller Strand mit riesigen Sanddünen, herrlicher Ruhe und tiefblauem Wasser.',
+    };
+  }
+
+  // Δημιουργία περιγραφής βάσει πραγματικών ιδιοτήτων
+  let el = '';
+  let en = '';
+  let fr = '';
+  let de = '';
+
+  if (b.shallow && isFineSand && b.organized) {
+    el = `Ιδανική επιλογή για οικογένειες, με ψιλή άμμο, ρηχά ασφαλή νερά και πλήρη οργάνωση με ομπρέλες και beach bars.`;
+    en = `Family-friendly beach with fine sand, calm shallow waters, and full amenities including sunbeds and beach bars.`;
+    fr = `Idéale pour les familles, avec sable fin, eaux peu profondes et nombreux aménagements.`;
+    de = `Familienfreundlicher Strand mit feinem Sand, seichtem Wasser, Liegen und Strandbars.`;
+  } else if (b.shallow && isFineSand && !b.organized) {
+    el = `Ήσυχη φυσική αμμουδιά με ρηχά, διάφανα νερά, ιδανική για χαλάρωση μακριά από οργανωμένες εγκαταστάσεις.`;
+    en = `Peaceful natural sandy beach with clear, shallow waters, perfect for relaxation away from crowds.`;
+    fr = `Plage naturelle paisible au sable fin et eaux cristallines peu profondes, idéale pour le calme.`;
+    de = `Ruhiger Naturstrand mit feinem Sand und seichtem Wasser, ideal zum ungestörten Entspannen.`;
+  } else if (isPebble && b.organized && b.beachBar) {
+    el = `Όμορφη παραλία με καθαρό βότσαλο, βαθιά αναζωογονητικά νερά και ζωντανή ατμόσφαιρα με beach bars.`;
+    en = `Scenic pebble beach with deep refreshing waters, sunbeds, and lively seaside cafés.`;
+    fr = `Belle plage de galets aux eaux profondes et vivifiantes, animée de bars de plage.`;
+    de = `Schöner Kieselstrand mit tiefem, erfrischendem Wasser und lebhaften Strandbars.`;
+  } else if (isPebble && !b.organized) {
+    el = `Αυθεντικός κολπίσκος με βότσαλο και κρυστάλλινο βυθό, ιδανικός για καταδύσεις και απόλυτη γαλήνη.`;
+    en = `Unspoiled pebble cove with crystalline waters and rocky seabed, excellent for snorkeling and tranquility.`;
+    fr = `Crique sauvage de galets aux eaux limpides, parfaite pour le snorkeling et la sérénité.`;
+    de = `Naturbelassene Kieselbucht mit glasklarem Wasser, ideal zum Schnorcheln und Abschalten.`;
+  } else if (b.orientation === 'S') {
+    el = `Απάνεμη νότια παραλία στο Λιβυκό Πέλαγος, προστατευμένη από τους βοριάδες, με πεντακάθαρα κρυστάλλινα νερά.`;
+    en = `South-facing beach sheltered from northern winds, offering pristine crystal waters and relaxed vibes.`;
+    fr = `Plage orientée au sud et abritée du vent du nord, baignée d'eaux limpides face à la mer de Libye.`;
+    de = `Vor Nordwinden geschützter Südstrand am Libyschen Meer mit glasklarem Wasser.`;
+  } else {
+    el = `Δημοφιλής παραλία με ${isFineSand ? 'ψιλή άμμο' : isPebble ? 'βότσαλο' : 'καθαρά νερά'}, ${b.organized ? 'πλήρως οργανωμένη με ανέσεις' : 'με φυσικό τοπίο και χαλαρή ατμόσφαιρα'}.`;
+    en = `Popular beach with ${isFineSand ? 'fine sand' : isPebble ? 'smooth pebbles' : 'clear waters'}, ${b.organized ? 'well-organized with seaside facilities' : 'offering an authentic unspoiled setting'}.`;
+    fr = `Plage agréable aux eaux claires, ${b.organized ? 'aménagée avec transats et commodités' : 'dans un cadre naturel préservé'}.`;
+    de = `Beliebter Strand mit ${isFineSand ? 'feinem Sand' : 'Kieseln'}, ${b.organized ? 'bestens organisiert mit Liegen' : 'in naturbelassener Umgebung'}.`;
+  }
+
+  return { el, en, fr, de };
+}
+
+const REGION_NAMES = {
+  chania: 'Χανιά',
+  rethymno: 'Ρέθυμνο',
+  heraklion: 'Ηράκλειο',
+  lasithi: 'Λασίθι',
 };
 
 function getRegion(raw) {
   const s = String(raw || '').toLowerCase();
-  if (s.includes('chan') || s.includes('χαν')) return REGIONS.chania;
-  if (s.includes('reth') || s.includes('ρεθ')) return REGIONS.rethymno;
-  if (s.includes('her') || s.includes('ηρακ')) return REGIONS.heraklion;
-  if (s.includes('las') || s.includes('λασι') || s.includes('sit') || s.includes('agios')) return REGIONS.lasithi;
-  return { el: 'Κρήτης', en: 'Crete', fr: 'Crète', de: 'Kreta', base: 'Κρήτη' };
-}
-
-function getGreekName(rawName) {
-  const clean = String(rawName || '').trim();
-  const lower = clean.toLowerCase();
-
-  if (EXACT_GREEK_NAMES[lower]) return EXACT_GREEK_NAMES[lower];
-  if (/[\u0370-\u03FF]/.test(clean)) return clean;
-
-  // Μετατροπή των λέξεων
-  const words = lower.split(' ').map((w) => {
-    if (EXACT_GREEK_NAMES[w]) return EXACT_GREEK_NAMES[w];
-    if (w === 'beach' || w === 'beaches') return '';
-    if (w === 'lake') return 'Λίμνη';
-    if (w === 'city') return '(Πόλη)';
-    if (w === 'cove' || w === 'coves') return 'Όρμος';
-    return w;
-  }).filter(Boolean);
-
-  let reconstructed = words.join(' ');
-  if (EXACT_GREEK_NAMES[reconstructed.toLowerCase()]) {
-    return EXACT_GREEK_NAMES[reconstructed.toLowerCase()];
-  }
-
-  return clean;
-}
-
-function buildDescriptions(b, greekName, enName, reg) {
-  const lower = enName.toLowerCase();
-  for (const [key, val] of Object.entries(HIGHLIGHT_DESCRIPTIONS)) {
-    if (lower === key || lower.includes(key)) {
-      return val;
-    }
-  }
-
-  const isSand = String(b.surface || '').toLowerCase().includes('sand');
-  const isFineSand = String(b.surface || '').toLowerCase().includes('fine sand');
-  const isPebble = String(b.surface || '').toLowerCase().includes('pebble');
-
-  // Ελληνικά
-  let groundEl = isFineSand ? 'ψιλή άμμο' : isSand ? 'χρυσή άμμο' : isPebble ? 'βότσαλο' : 'πεντακάθαρα νερά';
-  let groundEn = isFineSand ? 'fine sand' : isSand ? 'golden sand' : isPebble ? 'pebbles' : 'crystal waters';
-  let groundFr = isFineSand ? 'sable fin' : isSand ? 'sable doré' : isPebble ? 'galets' : 'eaux limpides';
-  let groundDe = isFineSand ? 'feinem Sand' : isSand ? 'Goldsand' : isPebble ? 'Kieseln' : 'kristallklarem Wasser';
-
-  let featuresEl = [];
-  if (b.shallow) featuresEl.push('ρηχά ασφαλή νερά');
-  if (b.beachBar) featuresEl.push('beach bars');
-  if (b.organized) featuresEl.push('ομπρέλες και ξαπλώστρες');
-  if (b.lifeguard) featuresEl.push('ναυαγοσώστη');
-
-  let descEl = '';
-  if (featuresEl.length > 0) {
-    descEl = `Δημοφιλής παραλία στην περιοχή ${reg.el} με ${groundEl}, ${featuresEl.join(', ')}.`;
-  } else if (!b.organized) {
-    descEl = `Πανέμορφη φυσική παραλία στην περιοχή ${reg.el} με ${groundEl}, ιδανική για ηρεμία και χαλάρωση.`;
-  } else {
-    descEl = `Οργανωμένη παραλία στην περιοχή ${reg.el} με ${groundEl} και καθαρά νερά.`;
-  }
-
-  // Αγγλικά
-  let featuresEn = [];
-  if (b.shallow) featuresEn.push('shallow waters');
-  if (b.beachBar) featuresEn.push('beach bars');
-  if (b.organized) featuresEn.push('sunbeds');
-  if (b.lifeguard) featuresEn.push('lifeguard on duty');
-
-  let descEn = featuresEn.length > 0
-    ? `Scenic beach in ${reg.en} with ${groundEn}, featuring ${featuresEn.join(', ')}.`
-    : `Peaceful natural beach in ${reg.en} with ${groundEn}, ideal for relaxed swimming.`;
-
-  // Γαλλικά
-  let descFr = b.organized
-    ? `Plage aménagée dans la région de ${reg.fr} avec ${groundFr}, idéale pour la baignade.`
-    : `Plage naturelle et préservée dans la région de ${reg.fr} avec ${groundFr}, parfaite pour la détente.`;
-
-  // Γερμανικά
-  let descDe = b.organized
-    ? `Organisierter Strand in der Region ${reg.de} mit ${groundDe}, Liegen und klarem Meer.`
-    : `Ruhiger Naturstrand in der Region ${reg.de} mit ${groundDe}, ideal zum Entspannen.`;
-
-  return {
-    el: descEl,
-    en: descEn,
-    fr: descFr,
-    de: descDe,
-  };
+  if (s.includes('chan') || s.includes('χαν')) return REGION_NAMES.chania;
+  if (s.includes('reth') || s.includes('ρεθ')) return REGION_NAMES.rethymno;
+  if (s.includes('her') || s.includes('ηρακ')) return REGION_NAMES.heraklion;
+  if (s.includes('las') || s.includes('λασι')) return REGION_NAMES.lasithi;
+  return 'Κρήτη';
 }
 
 async function run() {
   const filePath = path.resolve(process.cwd(), 'beaches.json');
-  const beaches = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  if (!fs.existsSync(filePath)) {
+    console.error('❌ Δεν βρέθηκε το αρχείο beaches.json.');
+    process.exit(1);
+  }
 
-  console.log(`⏳ Επεξεργασία ${beaches.length} παραλιών με το νέο λεξικό...`);
+  const beaches = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  console.log(`⏳ Επεξεργασία ${beaches.length} παραλιών με το νέο αυθεντικό ελληνικό λεξικό...`);
 
   const records = beaches.map((b) => {
     const rawName = String(b.name || '').trim();
-    const greekName = getGreekName(rawName);
-    const reg = getRegion(b.region);
-    const descObj = buildDescriptions(b, greekName, rawName, reg);
+    const greekName = GREEK_NAMES_MAP[b.id] || GREEK_NAMES_MAP[rawName.toLowerCase()] || rawName;
+    const region = getRegion(b.region);
+    const desc = getSpecificDescription(b, greekName);
 
     return {
       name: {
@@ -477,30 +471,30 @@ async function run() {
         fr: rawName,
         de: rawName,
       },
-      description: descObj,
+      description: desc,
       image_url: b.imageUrl || '/images/default-beach.jpg',
       google_rating: b.rating ? parseFloat(b.rating) : 4.5,
       wind_status: b.orientation === 'S' ? 'sheltered' : 'exposed',
       lat: b.lat || 35.24,
       lng: b.lng || 24.47,
-      region: reg.base,
+      region: region,
     };
   });
 
-  console.log('🧹 Εκκαθάριση πίνακα master_beaches...');
+  console.log('🧹 Εκκαθάριση master_beaches...');
   await supabase.from('master_beaches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-  console.log('🚀 Εισαγωγή παραλιών με σωστά ελληνικά ονόματα...');
+  console.log('🚀 Εισαγωγή παραλιών με σωστά ονόματα & τουριστικές περιγραφές...');
   const batchSize = 50;
   for (let i = 0; i < records.length; i += batchSize) {
     const batch = records.slice(i, i + batchSize);
     const { error } = await supabase.from('master_beaches').insert(batch);
     if (error) {
-      console.error('Σφάλμα:', error.message);
+      console.error(`Σφάλμα στο batch ${i}:`, error.message);
     }
   }
 
-  console.log('✅ Ολοκληρώθηκε! Όλα τα ονόματα και οι περιγραφές ενημερώθηκαν.');
+  console.log('🎉 Η εισαγωγή όλων των παραλιών ολοκληρώθηκε με απόλυτη επιτυχία!');
 }
 
 run();
